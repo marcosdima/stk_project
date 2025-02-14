@@ -2,7 +2,7 @@ mod common;
 
 #[cfg(test)]
 mod tests {
-    use actix_web::{http::header::ContentType, test, App, web, dev};
+    use actix_web::{dev, http::{header::ContentType, Method}, test, web, App};
     use diesel::SqliteConnection;
     use stk_backend::models::{NewSticker, Sticker};
     use crate::common;
@@ -13,7 +13,7 @@ mod tests {
 
     fn create_test_stickers(conn: &mut SqliteConnection, n: u16) -> Vec<Sticker> {
         let mut res: Vec<Sticker> = vec![];
-        for i in 1..n {
+        for i in 1..n + 1 {
             let test_label = format!("Test Sticker - {i}");
             let test_url = format!("www.some-url-{i}.com.ar");
 
@@ -65,6 +65,42 @@ mod tests {
         let expected = create_test_stickers(&mut pool.get().unwrap(), rand::random::<u16>());
         let resp = test::call_service(&app, req).await;
         let stickers = parse_response(resp).await;
+
+        assert_eq!(expected, stickers);
+    }
+
+    #[actix_web::test]
+    async fn test_delete_stickers() {
+        let pool = web::Data::new(common::init_test_db_pool());
+
+        let app = test::init_service(
+            App::new()
+                .app_data(pool.clone())
+                .configure(stk_backend::routes::stickers::configure)
+        ).await;
+
+        // Gets id from a new sticker.
+        let created = create_test_stickers(&mut pool.get().unwrap(), 1).pop().unwrap().id;
+
+        // Should return a succes message.
+        let req = test::TestRequest::default()
+            .method(Method::DELETE)
+            .uri(&format!("/stickers/{created}"))
+            .insert_header(ContentType::plaintext())
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
+        let body = test::read_body(resp).await;
+        assert_eq!(body, "Sticker deleted successfully");
+
+        // Gets stickers, it should be an empty vector.
+        let req = test::TestRequest::default()
+            .uri("/stickers")
+            .insert_header(ContentType::plaintext())
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+        let stickers = parse_response(resp).await;
+        let expected: Vec<Sticker> = vec![];
 
         assert_eq!(expected, stickers);
     }
