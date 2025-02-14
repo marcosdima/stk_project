@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use diesel::{self, Insertable, Queryable, RunQueryDsl, SqliteConnection};
+use diesel::{self, query_dsl::methods::FilterDsl, ExpressionMethods, Insertable, Queryable, RunQueryDsl, SqliteConnection};
 use uuid::Uuid;
 use crate::schema::{self, sticker};
 
@@ -12,7 +12,10 @@ pub struct Sticker {
 }
 
 impl Sticker {
-    pub fn new(label: String, url: String) -> Self {
+    pub fn new(
+        label: String,
+        url: String
+    ) -> Self {
         Sticker {
             id: Uuid::new_v4().to_string(),
             label,
@@ -20,7 +23,10 @@ impl Sticker {
         }
     }
 
-    pub fn create(conn: &mut SqliteConnection, data: NewSticker) -> Result<Sticker, diesel::result::Error> {
+    pub fn create(
+        conn: &mut SqliteConnection,
+        data: NewSticker
+    ) -> Result<Sticker, diesel::result::Error> {
         let new_sticker = Sticker::new(data.label, data.url);
 
         diesel::insert_into(schema::sticker::table)
@@ -30,10 +36,21 @@ impl Sticker {
         Ok(new_sticker)
     }
 
-    pub fn get_all(conn: &mut SqliteConnection) -> Result<Vec<Sticker>, diesel::result::Error> {
+    pub fn get_all(
+        conn: &mut SqliteConnection
+    ) -> Result<Vec<Sticker>, diesel::result::Error> {
         use crate::schema::sticker::dsl::*;
         let res = sticker.load(conn)?;
         Ok(res)
+    }
+
+    pub fn delete(
+        conn: &mut SqliteConnection,
+        sticker_id: String,
+    ) -> Result<usize, diesel::result::Error> {
+        use crate::schema::sticker::dsl::*;
+
+        diesel::delete(sticker.filter(id.eq(sticker_id))).execute(conn)
     }
 }
 
