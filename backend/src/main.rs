@@ -1,45 +1,16 @@
 mod models;
 mod schema;
+mod routes;
 
-use actix_web::{get, middleware, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, middleware, web, App, HttpResponse, HttpServer, Responder};
 use diesel::{r2d2, SqliteConnection};
-use models::Sticker;
+
 
 type DbPool = r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>;
 
 #[get("/")]
 async fn hello() -> impl Responder {
     HttpResponse::Ok().body("Hello world!")
-}
-
-#[post("/create")]
-async fn add_sticker(
-    pool: web::Data<DbPool>,
-    form: web::Json<models::NewSticker>,
-) -> impl Responder {
-    let conn = &mut pool.get().expect("Failed to get DB connection");
-    
-    match Sticker::create(conn, form.into_inner()) {
-        Ok(new_sticker) => HttpResponse::Created().json(new_sticker),
-        Err(e) => {
-            log::error!("Failed to insert sticker: {:?}", e);
-            HttpResponse::InternalServerError().body("Failed to insert sticker")
-        }
-    }
-
-    
-}
-
-#[get("/stickers")]
-async fn get_stickers(
-    pool: web::Data<DbPool>,
-) -> impl Responder {
-    let conn = &mut pool.get().expect("Couldn't get DB connection from pool");
-
-    match Sticker::get_all(conn) {
-        Ok(stickers) => HttpResponse::Ok().json(stickers),
-        Err(_) => HttpResponse::InternalServerError().finish(),
-    }
 }
 
 #[actix_web::main]
@@ -56,8 +27,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(pool.clone()))
             .wrap(middleware::Logger::default())
             .service(hello)
-            .service(add_sticker)
-            .service(get_stickers)
+            .configure(routes::stickers::configure)
     })
     .bind(("127.0.0.1", 8080))?
     .run()
