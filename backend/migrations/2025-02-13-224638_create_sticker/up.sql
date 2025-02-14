@@ -1,0 +1,5 @@
+CREATE TABLE sticker (
+    id TEXT PRIMARY KEY NOT NULL,
+    label TEXT NOT NULL,
+    url TEXT NOT NULL
+);
