@@ -1,5 +1,5 @@
-use crate::{models::Sticker, DbPool};
-use actix_web::{delete, get, post, web, HttpResponse, Responder};
+use crate::{models::{Sticker, StickerUpdate}, DbPool};
+use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 
 #[post("")]
 async fn add_sticker(
@@ -49,11 +49,26 @@ async fn delete_sticker(
     }
 }
 
+
+#[put("")]
+async fn update_sticker(
+    pool: web::Data<DbPool>,
+    data: web::Json<StickerUpdate>,
+) -> impl Responder {
+    let conn = &mut pool.get().expect("Couldn't get DB connection from pool");
+
+    match Sticker::update(conn, data.into_inner()) {
+        Ok(_) => HttpResponse::Ok().body("Updated successfully"),
+        Err(_) => HttpResponse::InternalServerError().finish(),
+    }
+}
+
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/stickers")
             .service(get_stickers)
             .service(add_sticker)
             .service(delete_sticker)
+            .service(update_sticker)
     );
 }

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use diesel::{self, query_dsl::methods::FilterDsl, ExpressionMethods, Insertable, Queryable, RunQueryDsl, SqliteConnection};
+use diesel::{self, query_dsl::methods::FilterDsl, AsChangeset, ExpressionMethods, Insertable, Queryable, RunQueryDsl, SqliteConnection};
 use uuid::Uuid;
 use crate::schema::{self, sticker};
 
@@ -52,6 +52,19 @@ impl Sticker {
 
         diesel::delete(sticker.filter(id.eq(sticker_id))).execute(conn)
     }
+
+    pub fn update(
+        conn: &mut SqliteConnection,
+        data: StickerUpdate,
+    ) -> Result<(), diesel::result::Error> {
+        use crate::schema::sticker::dsl::*;
+
+        diesel::update(sticker.filter(id.eq(&data.id)))
+            .set(&data)
+            .execute(conn)?;
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -63,5 +76,19 @@ pub struct NewSticker {
 impl NewSticker {
     pub fn new(label: String, url: String) -> Self {
         NewSticker { label, url }
+    }
+}
+
+#[derive(AsChangeset, Deserialize, Serialize)]
+#[diesel(table_name = sticker)]
+pub struct StickerUpdate {
+    pub id: String,
+    pub label: String,
+    pub url: String,
+}
+
+impl StickerUpdate {
+    pub fn new(id: String, label: String, url: String) -> Self {
+        StickerUpdate { id, label, url }
     }
 }

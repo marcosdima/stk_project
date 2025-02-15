@@ -9,7 +9,7 @@ mod tests {
     };
     use actix_http::Request;
     use diesel::SqliteConnection;
-    use stk_backend::models::{NewSticker, Sticker};
+    use stk_backend::models::{NewSticker, Sticker, StickerUpdate};
     use crate::common;
 
     async fn parse_response(resp: dev::ServiceResponse) -> Vec<Sticker> {
@@ -155,5 +155,43 @@ mod tests {
         let new_sticker: Sticker = serde_json::from_slice(&body).unwrap();
 
         expect_n_stk(&app, vec![new_sticker]).await;
+    }
+
+    #[actix_web::test]
+    async fn test_update_sticker() {
+        let pool = web::Data::new(common::init_test_db_pool());
+
+        let app = test::init_service(
+            App::new()
+                .app_data(pool.clone())
+                .configure(stk_backend::routes::stickers::configure)
+        ).await;
+
+        let new_sticker = create_test_stickers(&mut pool.get().unwrap(), 1).pop().unwrap();
+        let new_label = "NEW";
+        let new_url = "www.updated-url.com";
+
+        let updated_sticker_data = StickerUpdate::new(new_sticker.id, String::from(new_label), String::from(new_url));
+
+        // Updates sticker
+        let req = test::TestRequest::default()
+            .method(Method::PUT)
+            .uri("/stickers")
+            .insert_header(ContentType::json())
+            .set_payload(serde_json::to_string(&updated_sticker_data).unwrap())
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
+
+        expect_n_stk(
+            &app,
+            vec![
+                Sticker {
+                    id: updated_sticker_data.id,
+                    label: new_label.to_owned(),
+                    url: new_url.to_owned(),
+                }
+            ]
+        ).await;
     }
 }
