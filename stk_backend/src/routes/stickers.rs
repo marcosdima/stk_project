@@ -37,7 +37,7 @@ async fn delete_sticker(
     let conn = &mut pool.get().expect("Couldn't get DB connection from pool");
     let sticker_id = path.into_inner();
 
-    match Sticker::delete(conn, sticker_id) {
+    match Sticker::delete(conn, &sticker_id) {
         Ok(rows_deleted) => {
             if rows_deleted > 0 {
                 HttpResponse::Ok().body("Sticker deleted successfully")
@@ -49,7 +49,6 @@ async fn delete_sticker(
     }
 }
 
-
 #[put("")]
 async fn update_sticker(
     pool: web::Data<DbPool>,
@@ -57,9 +56,14 @@ async fn update_sticker(
 ) -> impl Responder {
     let conn = &mut pool.get().expect("Couldn't get DB connection from pool");
 
-    match Sticker::update(conn, data.into_inner()) {
-        Ok(_) => HttpResponse::Ok().body("Updated successfully"),
-        Err(_) => HttpResponse::InternalServerError().finish(),
+    match Sticker::get_by_id(conn, &data.id) {
+        Ok(_) => {
+            match Sticker::update(conn, data.into_inner()) {
+                Ok(_) => HttpResponse::Ok().body("Updated successfully"),
+                Err(_) => HttpResponse::InternalServerError().finish(),
+            }
+        }
+        Err(_) => HttpResponse::NotFound().body("Sticker not found"),
     }
 }
 

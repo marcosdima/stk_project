@@ -11,6 +11,7 @@ mod tests {
     use diesel::SqliteConnection;
     use stk_backend::models::{NewSticker, Sticker, StickerUpdate};
     use crate::common;
+    use uuid::Uuid;
 
     async fn parse_response(resp: dev::ServiceResponse) -> Vec<Sticker> {
         test::read_body_json(resp).await
@@ -171,7 +172,11 @@ mod tests {
         let new_label = "NEW";
         let new_url = "www.updated-url.com";
 
-        let updated_sticker_data = StickerUpdate::new(new_sticker.id, String::from(new_label), String::from(new_url));
+        let updated_sticker_data = StickerUpdate::new(
+            new_sticker.id,
+            String::from(new_label),
+            String::from(new_url)
+        );
 
         // Updates sticker
         let req = test::TestRequest::default()
@@ -193,5 +198,32 @@ mod tests {
                 }
             ]
         ).await;
+    }
+
+    #[actix_web::test]
+    async fn test_update_sticker_not_found() {
+        let pool = web::Data::new(common::init_test_db_pool());
+
+        let app = test::init_service(
+            App::new()
+                .app_data(pool.clone())
+                .configure(stk_backend::routes::stickers::configure)
+        ).await;
+
+        let updated_sticker_data = StickerUpdate::new(
+            Uuid::new_v4().to_string(),
+            String::from("NEW"),
+            String::from("www.updated-url.com")
+        );
+
+        // Updates sticker
+        let req = test::TestRequest::default()
+            .method(Method::PUT)
+            .uri("/stickers")
+            .insert_header(ContentType::json())
+            .set_payload(serde_json::to_string(&updated_sticker_data).unwrap())
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_client_error());
     }
 }

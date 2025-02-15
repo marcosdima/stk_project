@@ -44,9 +44,19 @@ impl Sticker {
         Ok(res)
     }
 
+    pub fn get_by_id(
+        conn: &mut SqliteConnection,
+        sticker_id: &String,
+    ) -> Result<Sticker, diesel::result::Error> {
+        use crate::schema::sticker::dsl::*;
+
+        sticker.filter(id.eq(sticker_id))
+            .first::<Sticker>(conn)
+    }
+
     pub fn delete(
         conn: &mut SqliteConnection,
-        sticker_id: String,
+        sticker_id: &String,
     ) -> Result<usize, diesel::result::Error> {
         use crate::schema::sticker::dsl::*;
 
