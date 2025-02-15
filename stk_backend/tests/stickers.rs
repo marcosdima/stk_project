@@ -2,7 +2,12 @@ mod common;
 
 #[cfg(test)]
 mod tests {
-    use actix_web::{dev, http::{header::ContentType, Method}, test, web, App};
+    use actix_web::{
+        dev::{self, Service, ServiceResponse},
+        http::{header::ContentType, Method},
+        test, web, App, Error
+    };
+    use actix_http::Request;
     use diesel::SqliteConnection;
     use stk_backend::models::{NewSticker, Sticker};
     use crate::common;
@@ -11,20 +16,40 @@ mod tests {
         test::read_body_json(resp).await
     }
 
+    fn get_stk_default_data(id: u16) -> NewSticker {
+        NewSticker {
+            label: format!("Test Sticker - {id}"),
+            url: format!("www.some-url-{id}.com.ar"),
+        }
+    }
+
     fn create_test_stickers(conn: &mut SqliteConnection, n: u16) -> Vec<Sticker> {
         let mut res: Vec<Sticker> = vec![];
-        for i in 1..n + 1 {
-            let test_label = format!("Test Sticker - {i}");
-            let test_url = format!("www.some-url-{i}.com.ar");
-
+        for id in 1..n + 1 {
             res.push(
                 Sticker::create(
                     conn,
-                    NewSticker::new(test_label, test_url),
+                    get_stk_default_data(id),
                 ).unwrap()
             );
         }
         res
+    }
+
+    async fn expect_n_stk(
+        app: &impl Service<Request, Response = ServiceResponse, Error = Error>, 
+        expected: Vec<Sticker>
+    ) {
+        let req = test::TestRequest::default()
+            .uri("/stickers")
+            .insert_header(ContentType::plaintext())
+            .to_request();
+
+        let resp = test::call_service(app, req).await;
+        
+        let stickers = parse_response(resp).await;
+
+        assert_eq!(expected, stickers);
     }
 
     #[actix_web::test]
@@ -35,16 +60,7 @@ mod tests {
                 .configure(stk_backend::routes::stickers::configure)
         ).await;
 
-        let req = test::TestRequest::default()
-            .uri("/stickers")
-            .insert_header(ContentType::plaintext())
-            .to_request();
-
-        let resp = test::call_service(&app, req).await;
-        let stickers = parse_response(resp).await;
-        let expected: Vec<Sticker> = vec![];
-
-        assert_eq!(expected, stickers);
+        expect_n_stk(&app, vec![]).await;
     }
 
     #[actix_web::test]
@@ -57,16 +73,8 @@ mod tests {
                 .configure(stk_backend::routes::stickers::configure)
         ).await;
 
-        let req = test::TestRequest::default()
-            .uri("/stickers")
-            .insert_header(ContentType::plaintext())
-            .to_request();
-
         let expected = create_test_stickers(&mut pool.get().unwrap(), rand::random::<u16>());
-        let resp = test::call_service(&app, req).await;
-        let stickers = parse_response(resp).await;
-
-        assert_eq!(expected, stickers);
+        expect_n_stk(&app, expected).await;
     }
 
     #[actix_web::test]
@@ -94,14 +102,29 @@ mod tests {
         assert_eq!(body, "Sticker deleted successfully");
 
         // Gets stickers, it should be an empty vector.
+        expect_n_stk(&app, vec![]).await;
+    }
+
+    #[actix_web::test]
+    async fn test_delete_stickers_not_found() {
+        let pool = web::Data::new(common::init_test_db_pool());
+
+        let app = test::init_service(
+            App::new()
+                .app_data(pool.clone())
+                .configure(stk_backend::routes::stickers::configure)
+        ).await;
+
+        // Should return a succes message.
         let req = test::TestRequest::default()
-            .uri("/stickers")
+            .method(Method::DELETE)
+            .uri(&format!("/stickers/id-not-found"))
             .insert_header(ContentType::plaintext())
             .to_request();
         let resp = test::call_service(&app, req).await;
-        let stickers = parse_response(resp).await;
-        let expected: Vec<Sticker> = vec![];
+        assert!(resp.status().is_client_error());
+        let body = test::read_body(resp).await;
+        assert_eq!(body, "Sticker not found");
 
-        assert_eq!(expected, stickers);
     }
 }
