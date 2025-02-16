@@ -6,4 +6,4 @@ file = "src/schema.rs"
 custom_type_derives = ["diesel::query_builder::QueryId", "Clone"]
 
 [migrations_directory]
-dir = "/home/marcos/Escritorio/Projects/Rust/stk_project/backend/migrations"
+dir = "/home/marcos/Escritorio/Projects/Rust/stk_project/stk_backend/migrations"
