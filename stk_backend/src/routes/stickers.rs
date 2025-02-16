@@ -1,10 +1,11 @@
-use crate::{models::{Sticker, StickerUpdate}, DbPool};
+use crate::models::stickers::{Sticker, StickerUpdate, NewSticker};
+use crate::DbPool;
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 
 #[post("")]
 async fn add_sticker(
     pool: web::Data<DbPool>,
-    form: web::Json<crate::models::NewSticker>,
+    form: web::Json<NewSticker>,
 ) -> impl Responder {
     let conn = &mut pool.get().expect("Couldn't get DB connection from pool");
     

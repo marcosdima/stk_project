@@ -9,7 +9,7 @@ mod tests {
     };
     use actix_http::Request;
     use diesel::SqliteConnection;
-    use stk_backend::models::{NewSticker, Sticker, StickerUpdate};
+    use stk_backend::models::stickers::{NewSticker, Sticker, StickerUpdate};
     use crate::common;
     use uuid::Uuid;
 
