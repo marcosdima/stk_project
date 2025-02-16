@@ -176,7 +176,7 @@ mod tests {
             new_sticker.id,
             String::from(new_label),
             String::from(new_url)
-        );
+        ).unwrap();
 
         // Updates sticker
         let req = test::TestRequest::default()
@@ -192,7 +192,7 @@ mod tests {
             &app,
             vec![
                 Sticker {
-                    id: updated_sticker_data.id,
+                    id: updated_sticker_data.id.to_string(),
                     label: new_label.to_owned(),
                     url: new_url.to_owned(),
                 }
@@ -214,7 +214,7 @@ mod tests {
             Uuid::new_v4().to_string(),
             String::from("NEW"),
             String::from("www.updated-url.com")
-        );
+        ).unwrap();
 
         // Updates sticker
         let req = test::TestRequest::default()
@@ -226,4 +226,42 @@ mod tests {
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_client_error());
     }
+
+    #[actix_web::test]
+    async fn test_update_sticker_wrong_id() {
+        let pool = web::Data::new(common::init_test_db_pool());
+
+        let app = test::init_service(
+            App::new()
+                .app_data(pool.clone())
+                .configure(stk_backend::routes::stickers::configure)
+        ).await;
+
+        let new_sticker = create_test_stickers(&mut pool.get().unwrap(), 1).pop().unwrap();
+        let new_label = "NEW";
+        let new_url = "www.updated-url.com";
+
+        let updated_sticker_data = serde_json::json!({
+            "id": "wrong-id",
+            "label": new_label,
+            "url": new_url
+        });
+
+        // Updates sticker
+        let req = test::TestRequest::default()
+            .method(Method::PUT)
+            .uri("/stickers")
+            .insert_header(ContentType::json())
+            .set_payload(serde_json::to_string(&updated_sticker_data).unwrap())
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_client_error());
+
+        expect_n_stk(
+            &app,
+            vec![new_sticker]
+        ).await;
+    }
+
+
 }

@@ -69,7 +69,7 @@ impl Sticker {
     ) -> Result<(), diesel::result::Error> {
         use crate::schema::sticker::dsl::*;
 
-        diesel::update(sticker.filter(id.eq(&data.id)))
+        diesel::update(sticker.filter(id.eq(&data.id.to_string())))
             .set(&data)
             .execute(conn)?;
 
@@ -92,13 +92,20 @@ impl NewSticker {
 #[derive(AsChangeset, Deserialize, Serialize)]
 #[diesel(table_name = sticker)]
 pub struct StickerUpdate {
-    pub id: String,
+    pub id: Uuid,
     pub label: String,
     pub url: String,
 }
 
 impl StickerUpdate {
-    pub fn new(id: String, label: String, url: String) -> Self {
-        StickerUpdate { id, label, url }
+    pub fn new(id: String, label: String, url: String) -> Result<Self, uuid::Error> {
+        let uuid = Uuid::parse_str(&id)?;
+        Ok(
+            StickerUpdate {
+                id: uuid,
+                label,
+                url
+            }
+        )
     }
 }

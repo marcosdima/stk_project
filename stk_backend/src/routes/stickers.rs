@@ -57,7 +57,7 @@ async fn update_sticker(
 ) -> impl Responder {
     let conn = &mut pool.get().expect("Couldn't get DB connection from pool");
 
-    match Sticker::get_by_id(conn, &data.id) {
+    match Sticker::get_by_id(conn, &data.id.to_string()) {
         Ok(_) => {
             match Sticker::update(conn, data.into_inner()) {
                 Ok(_) => HttpResponse::Ok().body("Updated successfully"),
