@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
-use diesel::{self, query_dsl::methods::FilterDsl, AsChangeset, ExpressionMethods, Insertable, Queryable, RunQueryDsl, SqliteConnection};
+use diesel::{self, AsChangeset, ExpressionMethods, Insertable, QueryDsl, Queryable, RunQueryDsl, SqliteConnection};
 use uuid::Uuid;
-use crate::schema::{self, sticker};
+use crate::schema::sticker;
+use crate::models::common::Model;
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Queryable, Insertable)]
 #[diesel(table_name = sticker)]
@@ -22,40 +23,54 @@ impl Sticker {
             url,
         }
     }
+}
 
-    pub fn create(
+impl Model for Sticker {
+    type NewT = NewSticker;
+    type UpdateT = StickerUpdate;
+    type C = SqliteConnection;
+
+    fn new(data: Self::NewT) -> Self {
+        Sticker {
+            id: Uuid::new_v4().to_string(),
+            label: data.label,
+            url: data.url,
+        }
+    }
+
+    fn create(
         conn: &mut SqliteConnection,
         data: NewSticker
     ) -> Result<Sticker, diesel::result::Error> {
         let new_sticker = Sticker::new(data.label, data.url);
 
-        diesel::insert_into(schema::sticker::table)
+        diesel::insert_into(sticker::table)
             .values(&new_sticker)
             .execute(conn)?;
 
         Ok(new_sticker)
     }
 
-    pub fn get_all(
-        conn: &mut SqliteConnection
-    ) -> Result<Vec<Sticker>, diesel::result::Error> {
+    fn get_all(
+        conn: &mut Self::C
+    ) -> Result<Vec<Self>, diesel::result::Error> {
         use crate::schema::sticker::dsl::*;
         let res = sticker.load(conn)?;
         Ok(res)
     }
 
-    pub fn get_by_id(
-        conn: &mut SqliteConnection,
+    fn get_by_id(
+        conn: &mut Self::C,
         sticker_id: &String,
-    ) -> Result<Sticker, diesel::result::Error> {
+    ) -> Result<Self, diesel::result::Error> {
         use crate::schema::sticker::dsl::*;
 
         sticker.filter(id.eq(sticker_id))
             .first::<Sticker>(conn)
     }
 
-    pub fn delete(
-        conn: &mut SqliteConnection,
+    fn delete(
+        conn: &mut Self::C,
         sticker_id: &String,
     ) -> Result<usize, diesel::result::Error> {
         use crate::schema::sticker::dsl::*;
@@ -63,9 +78,9 @@ impl Sticker {
         diesel::delete(sticker.filter(id.eq(sticker_id))).execute(conn)
     }
 
-    pub fn update(
-        conn: &mut SqliteConnection,
-        data: StickerUpdate,
+    fn update(
+        conn: &mut Self::C,
+        data: Self::UpdateT,
     ) -> Result<(), diesel::result::Error> {
         use crate::schema::sticker::dsl::*;
 
