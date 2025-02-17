@@ -1,6 +1,6 @@
 use diesel::{r2d2::{self, ConnectionManager}, SqliteConnection};
 use diesel_migrations::{self, embed_migrations, EmbeddedMigrations, MigrationHarness};
-use stk_backend::DbPool;
+use stk_backend::routes::DbPool;
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
 
 pub fn init_test_db_pool() -> DbPool {

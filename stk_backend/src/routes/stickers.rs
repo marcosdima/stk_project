@@ -1,5 +1,5 @@
-use crate::models::stickers::{Sticker, StickerUpdate, NewSticker};
-use crate::DbPool;
+use crate::models::{Model, stickers::{Sticker, StickerUpdate, NewSticker}};
+use crate::routes::DbPool;
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 
 #[post("")]
