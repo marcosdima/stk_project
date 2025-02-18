@@ -17,7 +17,7 @@ mod tests {
         test::read_body_json(resp).await
     }
 
-    fn get_stk_default_data(id: u16) -> NewCategory {
+    fn get_category_default_data(id: u16) -> NewCategory {
         NewCategory {
             name: format!("Test Category - {id}"),
             sub_category_of: None,
@@ -30,7 +30,7 @@ mod tests {
             res.push(
                 Category::create(
                     conn,
-                    get_stk_default_data(id),
+                    get_category_default_data(id),
                 ).unwrap()
             );
         }
@@ -139,7 +139,7 @@ mod tests {
                 .configure(stk_backend::routes::categories::configure)
         ).await;
 
-        let new_category_data = get_stk_default_data(1);
+        let new_category_data = get_category_default_data(1);
 
         // Creates a category.
         let req = test::TestRequest::default()
