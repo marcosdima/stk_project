@@ -37,7 +37,7 @@ mod tests {
         res
     }
 
-    async fn expect_n_stk(
+    async fn expect_n_categories(
         app: &impl Service<Request, Response = ServiceResponse, Error = Error>, 
         expected: Vec<Category>
     ) {
@@ -61,7 +61,7 @@ mod tests {
                 .configure(stk_backend::routes::categories::configure)
         ).await;
 
-        expect_n_stk(&app, vec![]).await;
+        expect_n_categories(&app, vec![]).await;
     }
 
     #[actix_web::test]
@@ -75,7 +75,7 @@ mod tests {
         ).await;
 
         let expected = create_test_categories(&mut pool.get().unwrap(), rand::random::<u16>());
-        expect_n_stk(&app, expected).await;
+        expect_n_categories(&app, expected).await;
     }
 
     #[actix_web::test]
@@ -103,7 +103,7 @@ mod tests {
         assert_eq!(body, "Category deleted successfully");
 
         // Gets categories, it should be an empty vector.
-        expect_n_stk(&app, vec![]).await;
+        expect_n_categories(&app, vec![]).await;
     }
 
     #[actix_web::test]
@@ -155,7 +155,7 @@ mod tests {
         let body = test::read_body(resp).await;
         let new_category: Category = serde_json::from_slice(&body).unwrap();
 
-        expect_n_stk(&app, vec![new_category]).await;
+        expect_n_categories(&app, vec![new_category]).await;
     }
 
     #[actix_web::test]
@@ -187,7 +187,7 @@ mod tests {
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
-        expect_n_stk(
+        expect_n_categories(
             &app,
             vec![
                 Category {
@@ -256,7 +256,7 @@ mod tests {
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_client_error());
 
-        expect_n_stk(
+        expect_n_categories(
             &app,
             vec![new_category]
         ).await;
