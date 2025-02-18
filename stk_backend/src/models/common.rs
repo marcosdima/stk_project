@@ -16,12 +16,12 @@ pub trait Model: Sized {
 
     fn get_by_id(
         conn: &mut Self::C,
-        sticker_id: &String
+        element_id: &String
     ) -> Result<Self, diesel::result::Error>;
 
     fn delete(
         conn: &mut Self::C,
-        sticker_id: &String
+        element_id: &String
     ) -> Result<usize, diesel::result::Error>;
 
     fn update(

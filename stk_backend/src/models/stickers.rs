@@ -61,21 +61,21 @@ impl Model for Sticker {
 
     fn get_by_id(
         conn: &mut Self::C,
-        sticker_id: &String,
+        element_id: &String,
     ) -> Result<Self, diesel::result::Error> {
         use crate::schema::sticker::dsl::*;
 
-        sticker.filter(id.eq(sticker_id))
+        sticker.filter(id.eq(element_id))
             .first::<Sticker>(conn)
     }
 
     fn delete(
         conn: &mut Self::C,
-        sticker_id: &String,
+        element_id: &String,
     ) -> Result<usize, diesel::result::Error> {
         use crate::schema::sticker::dsl::*;
 
-        diesel::delete(sticker.filter(id.eq(sticker_id))).execute(conn)
+        diesel::delete(sticker.filter(id.eq(element_id))).execute(conn)
     }
 
     fn update(

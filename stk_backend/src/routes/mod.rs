@@ -2,6 +2,7 @@ use diesel::{r2d2, SqliteConnection};
 
 pub mod stickers;
 pub mod hello;
+pub mod categories;
 
 pub type DbPool = r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>;
 
