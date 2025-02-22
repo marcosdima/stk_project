@@ -1,31 +1,45 @@
-pub trait Model: Sized {
+use std::fmt::Debug;
+
+use diesel::r2d2::{ConnectionManager, PooledConnection};
+use diesel::SqliteConnection;
+use serde::Deserialize;
+
+use crate::errors::AppError;
+use crate::routes::DbPool;
+
+pub trait Model: Sized + Debug + PartialEq + for<'a> Deserialize<'a> {
     type NewT;
     type UpdateT;
-    type C: diesel::Connection;
 
     fn new(data: Self::NewT) -> Self;
 
+    fn get_conn(
+        pool: &DbPool
+    ) -> Result<PooledConnection<ConnectionManager<SqliteConnection>>, AppError> {
+        Ok(pool.get().expect("Couldn't get DB connection from pool"))
+    }
+
     fn create(
-        conn: &mut Self::C,
+        pool: &DbPool,
         data: Self::NewT
-    ) -> Result<Self, diesel::result::Error>;
+    ) -> Result<Self, AppError>;
 
     fn get_all(
-        conn: &mut Self::C,
-    ) -> Result<Vec<Self>, diesel::result::Error>;
+        pool: &DbPool,
+    ) -> Result<Vec<Self>,AppError>;
 
     fn get_by_id(
-        conn: &mut Self::C,
-        element_id: &String
-    ) -> Result<Self, diesel::result::Error>;
+        pool: &DbPool,
+        element_id: String
+    ) -> Result<Self,AppError>;
 
     fn delete(
-        conn: &mut Self::C,
-        element_id: &String
-    ) -> Result<usize, diesel::result::Error>;
+        pool: &DbPool,
+        element_id: String
+    ) -> Result<usize,AppError>;
 
     fn update(
-        conn: &mut Self::C,
+        pool: &DbPool,
         data: Self::UpdateT
-    ) -> Result<(), diesel::result::Error>;
+    ) -> Result<(),AppError>;
 }

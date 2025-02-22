@@ -1,8 +1,12 @@
 use serde::{Deserialize, Serialize};
-use diesel::{self, AsChangeset, ExpressionMethods, Insertable, QueryDsl, Queryable, RunQueryDsl, SqliteConnection};
+use diesel::{self, AsChangeset, ExpressionMethods, Insertable, QueryDsl, Queryable, RunQueryDsl};
 use uuid::Uuid;
-use crate::schema::sticker;
-use crate::models::common::Model;
+use crate::{
+    errors::AppError,
+    routes::DbPool,
+    schema::sticker,
+    models::common::Model,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Queryable, Insertable)]
 #[diesel(table_name = sticker)]
@@ -28,7 +32,6 @@ impl Sticker {
 impl Model for Sticker {
     type NewT = NewSticker;
     type UpdateT = StickerUpdate;
-    type C = SqliteConnection;
 
     fn new(data: Self::NewT) -> Self {
         Sticker {
@@ -39,10 +42,11 @@ impl Model for Sticker {
     }
 
     fn create(
-        conn: &mut SqliteConnection,
+        pool: &DbPool,
         data: NewSticker
-    ) -> Result<Sticker, diesel::result::Error> {
+    ) -> Result<Sticker, AppError> {
         let new_sticker = Sticker::new(data.label, data.url);
+        let conn = &mut Self::get_conn(pool)?;
 
         diesel::insert_into(sticker::table)
             .values(&new_sticker)
@@ -52,37 +56,42 @@ impl Model for Sticker {
     }
 
     fn get_all(
-        conn: &mut Self::C
-    ) -> Result<Vec<Self>, diesel::result::Error> {
+        pool: &DbPool
+    ) -> Result<Vec<Self>, AppError> {
         use crate::schema::sticker::dsl::*;
+        let conn = &mut Self::get_conn(pool)?;
+
         let res = sticker.load(conn)?;
         Ok(res)
     }
 
     fn get_by_id(
-        conn: &mut Self::C,
-        element_id: &String,
-    ) -> Result<Self, diesel::result::Error> {
+        pool: &DbPool,
+        element_id: String,
+    ) -> Result<Self, AppError> {
         use crate::schema::sticker::dsl::*;
+        let conn = &mut Self::get_conn(pool)?;
 
-        sticker.filter(id.eq(element_id))
-            .first::<Sticker>(conn)
+        Ok(sticker.filter(id.eq(element_id))
+            .first::<Sticker>(conn)?)
     }
 
     fn delete(
-        conn: &mut Self::C,
-        element_id: &String,
-    ) -> Result<usize, diesel::result::Error> {
+        pool: &DbPool,
+        element_id: String,
+    ) -> Result<usize, AppError> {
         use crate::schema::sticker::dsl::*;
+        let conn = &mut Self::get_conn(pool)?;
 
-        diesel::delete(sticker.filter(id.eq(element_id))).execute(conn)
+        Ok(diesel::delete(sticker.filter(id.eq(element_id))).execute(conn)?)
     }
 
     fn update(
-        conn: &mut Self::C,
+        pool: &DbPool,
         data: Self::UpdateT,
-    ) -> Result<(), diesel::result::Error> {
+    ) -> Result<(), AppError> {
         use crate::schema::sticker::dsl::*;
+        let conn = &mut Self::get_conn(pool)?;
 
         diesel::update(sticker.filter(id.eq(&data.id.to_string())))
             .set(&data)
