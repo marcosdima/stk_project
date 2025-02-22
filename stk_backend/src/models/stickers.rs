@@ -70,10 +70,15 @@ impl Model for Sticker {
         element_id: String,
     ) -> Result<Self, AppError> {
         use crate::schema::sticker::dsl::*;
-        let conn = &mut Self::get_conn(pool)?;
 
-        Ok(sticker.filter(id.eq(element_id))
-            .first::<Sticker>(conn)?)
+        if let Ok(found) = sticker
+            .filter(id.eq(element_id))
+            .first::<Self>(&mut Self::get_conn(pool)?)
+            {
+            Ok(found)
+        } else {
+            Err(AppError::NotFound("Sticker with id provided does not exist!"))
+        }
     }
 
     fn delete(
@@ -92,6 +97,9 @@ impl Model for Sticker {
     ) -> Result<(), AppError> {
         use crate::schema::sticker::dsl::*;
         let conn = &mut Self::get_conn(pool)?;
+
+        // Checks if category exists...
+        let _ = Self::get_by_id(pool, data.id.to_string())?;
 
         diesel::update(sticker.filter(id.eq(&data.id.to_string())))
             .set(&data)
