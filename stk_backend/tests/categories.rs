@@ -3,19 +3,28 @@ mod common;
 #[cfg(test)]
 mod tests {
     use actix_web::{
-        dev::{self, Service, ServiceResponse},
-        http::{header::ContentType, Method},
-        test, web, App, Error
+        http::{
+            header::ContentType,
+            Method
+        },
+        test,
+        web,
+        App,
     };
-    use actix_http::Request;
-    use diesel::SqliteConnection;
-    use stk_backend::models::{categories::{NewCategory, Category, CategoryUpdate}, Model};
+
+    use stk_backend::{
+        models::{
+            categories::{
+                Category,
+                CategoryUpdate,
+                NewCategory
+            },
+            Model
+        },
+        routes::DbPool
+    };
     use crate::common;
     use uuid::Uuid;
-
-    async fn parse_response(resp: dev::ServiceResponse) -> Vec<Category> {
-        test::read_body_json(resp).await
-    }
 
     fn get_category_default_data(id: u16) -> NewCategory {
         NewCategory {
@@ -24,33 +33,66 @@ mod tests {
         }
     }
 
-    fn create_test_categories(conn: &mut SqliteConnection, n: u16) -> Vec<Category> {
-        let mut res: Vec<Category> = vec![];
-        for id in 1..n + 1 {
-            res.push(
-                Category::create(
-                    conn,
-                    get_category_default_data(id),
-                ).unwrap()
-            );
-        }
-        res
+    fn create_categories(pool: &DbPool, n: u16) -> Vec<Category> {
+        common::create_test_objects::<Category>(pool, n, get_category_default_data)
     }
 
-    async fn expect_n_categories(
-        app: &impl Service<Request, Response = ServiceResponse, Error = Error>, 
-        expected: Vec<Category>
-    ) {
+    fn create_n_categories_join(pool: &DbPool) -> Vec<Category> {
+        let mut new_categories = create_categories(pool, 3);
+
+        for c in 0..2 {
+            let target = new_categories[c].clone();
+            let upper_category_id = new_categories[c + 1].id.clone();
+            let update_category_data = CategoryUpdate::new(
+                target.id.clone(),
+                target.name.clone(),
+                Some(upper_category_id),
+            ).unwrap();
+            
+   
+            if Category::update(pool, update_category_data).is_ok() {
+                if let Ok(updated) = Category::get_by_id(pool, target.id.clone()) {
+                    new_categories[c] = updated;
+                }
+            }
+        }
+
+        new_categories
+    }
+
+    #[actix_web::test]
+    async fn test_update_category_circular_error() {
+        let pool = web::Data::new(common::init_test_db_pool());
+
+        let app = test::init_service(
+            App::new()
+                .app_data(pool.clone())
+                .configure(stk_backend::routes::categories::configure)
+        ).await;
+
+        // Make the last connection, creating a circular relation...
+        let categories = create_n_categories_join(&pool);
+
+        // Curr relation: first -> second -> last (Last is not a subcategory)
+        let first = categories.first().unwrap();
+        let last = categories.last().unwrap();
+
+        // Tries to set last as subcategory of fist.
+        let updated_category_data = CategoryUpdate::new(
+            last.id.clone(),
+            last.name.clone(),
+            Some(first.id.to_string()),
+        ).unwrap();
+
         let req = test::TestRequest::default()
+            .method(Method::PUT)
             .uri("/categories")
-            .insert_header(ContentType::plaintext())
+            .insert_header(ContentType::json())
+            .set_payload(serde_json::to_string(&updated_category_data).unwrap())
             .to_request();
+        let resp = test::call_service(&app, req).await;
 
-        let resp = test::call_service(app, req).await;
-        
-        let categories = parse_response(resp).await;
-
-        assert_eq!(expected, categories);
+        assert!(resp.status().is_client_error());
     }
 
     #[actix_web::test]
@@ -61,7 +103,8 @@ mod tests {
                 .configure(stk_backend::routes::categories::configure)
         ).await;
 
-        expect_n_categories(&app, vec![]).await;
+        let empty: Vec<Category> = vec![];
+        common::expect_n_elements(&app, "/categories", empty).await;
     }
 
     #[actix_web::test]
@@ -74,8 +117,8 @@ mod tests {
                 .configure(stk_backend::routes::categories::configure)
         ).await;
 
-        let expected = create_test_categories(&mut pool.get().unwrap(), rand::random::<u16>());
-        expect_n_categories(&app, expected).await;
+        let expected = create_categories(&pool, rand::random::<u16>());
+        common::expect_n_elements(&app, "/categories", expected).await;
     }
 
     #[actix_web::test]
@@ -89,7 +132,7 @@ mod tests {
         ).await;
 
         // Gets id from a new category.
-        let created = create_test_categories(&mut pool.get().unwrap(), 1).pop().unwrap().id;
+        let created = create_categories(&pool, 1).pop().unwrap().id;
 
         // Should return a succes message.
         let req = test::TestRequest::default()
@@ -103,7 +146,8 @@ mod tests {
         assert_eq!(body, "Category deleted successfully");
 
         // Gets categories, it should be an empty vector.
-        expect_n_categories(&app, vec![]).await;
+        let empty: Vec<Category> = vec![];
+        common::expect_n_elements(&app, "/categories", empty).await;
     }
 
     #[actix_web::test]
@@ -155,7 +199,36 @@ mod tests {
         let body = test::read_body(resp).await;
         let new_category: Category = serde_json::from_slice(&body).unwrap();
 
-        expect_n_categories(&app, vec![new_category]).await;
+        common::expect_n_elements(&app, "/categories", vec![new_category]).await;
+    }
+
+    #[actix_web::test]
+    async fn test_create_category_wrong_sub_category_of() {
+        let pool = web::Data::new(common::init_test_db_pool());
+
+        let app = test::init_service(
+            App::new()
+                .app_data(pool.clone())
+                .configure(stk_backend::routes::categories::configure)
+        ).await;
+
+        let mut new_category_data = get_category_default_data(1);
+        new_category_data.sub_category_of = Some(String::from("no-id"));
+
+        // Creates a category.
+        let req = test::TestRequest::default()
+            .method(Method::POST)
+            .uri(&format!("/categories"))
+            .insert_header(ContentType::json())
+            .set_payload(serde_json::to_string(&new_category_data).unwrap())
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+  
+        assert!(resp.status().is_client_error());
+
+        // Gets the new category.
+        let empty: Vec<Category> = vec![];
+        common::expect_n_elements(&app, "/categories", empty).await;
     }
 
     #[actix_web::test]
@@ -168,7 +241,7 @@ mod tests {
                 .configure(stk_backend::routes::categories::configure)
         ).await;
 
-        let new_category = create_test_categories(&mut pool.get().unwrap(), 1).pop().unwrap();
+        let new_category = create_categories(&pool, 1).pop().unwrap();
         let new_name = "NEW";
 
         let updated_category_data = CategoryUpdate::new(
@@ -187,14 +260,15 @@ mod tests {
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
-        expect_n_categories(
+        common::expect_n_elements(
             &app,
+            "/categories", 
             vec![
-                Category {
-                    id: updated_category_data.id.to_string(),
-                    name: new_name.to_owned(),
-                    sub_category_of: None,
-                }
+                Category::test_new(
+                    updated_category_data.id.to_string(),
+                    new_name.to_owned(),
+                    None,
+                )
             ]
         ).await;
     }
@@ -236,7 +310,7 @@ mod tests {
                 .configure(stk_backend::routes::categories::configure)
         ).await;
 
-        let new_category = create_test_categories(&mut pool.get().unwrap(), 1).pop().unwrap();
+        let new_category = common::create_test_objects::<Category>(&pool, 1, get_category_default_data).pop().unwrap();
         let new_name = "NEW";
         let new_url = "www.updated-url.com";
 
@@ -256,11 +330,10 @@ mod tests {
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_client_error());
 
-        expect_n_categories(
+        common::expect_n_elements::<Category>(
             &app,
+            "/categories", 
             vec![new_category]
         ).await;
     }
-
-
 }

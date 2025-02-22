@@ -3,19 +3,25 @@ mod common;
 #[cfg(test)]
 mod tests {
     use actix_web::{
-        dev::{self, Service, ServiceResponse},
-        http::{header::ContentType, Method},
-        test, web, App, Error
+        http::{
+            header::ContentType,
+            Method
+        },
+        test,
+        web,
+        App,
     };
-    use actix_http::Request;
-    use diesel::SqliteConnection;
-    use stk_backend::models::{stickers::{NewSticker, Sticker, StickerUpdate}, Model};
+
+    use stk_backend::{
+        models::stickers::{
+            NewSticker,
+            Sticker,
+            StickerUpdate,
+        },
+        routes::DbPool
+    };
     use crate::common;
     use uuid::Uuid;
-
-    async fn parse_response(resp: dev::ServiceResponse) -> Vec<Sticker> {
-        test::read_body_json(resp).await
-    }
 
     fn get_stk_default_data(id: u16) -> NewSticker {
         NewSticker {
@@ -24,33 +30,8 @@ mod tests {
         }
     }
 
-    fn create_test_stickers(conn: &mut SqliteConnection, n: u16) -> Vec<Sticker> {
-        let mut res: Vec<Sticker> = vec![];
-        for id in 1..n + 1 {
-            res.push(
-                Sticker::create(
-                    conn,
-                    get_stk_default_data(id),
-                ).unwrap()
-            );
-        }
-        res
-    }
-
-    async fn expect_n_stk(
-        app: &impl Service<Request, Response = ServiceResponse, Error = Error>, 
-        expected: Vec<Sticker>
-    ) {
-        let req = test::TestRequest::default()
-            .uri("/stickers")
-            .insert_header(ContentType::plaintext())
-            .to_request();
-
-        let resp = test::call_service(app, req).await;
-        
-        let stickers = parse_response(resp).await;
-
-        assert_eq!(expected, stickers);
+    fn create_stickers(pool: &DbPool, n: u16) -> Vec<Sticker> {
+        common::create_test_objects::<Sticker>(pool, n, get_stk_default_data)
     }
 
     #[actix_web::test]
@@ -61,7 +42,8 @@ mod tests {
                 .configure(stk_backend::routes::stickers::configure)
         ).await;
 
-        expect_n_stk(&app, vec![]).await;
+        let empty: Vec<Sticker> = vec![];
+        common::expect_n_elements(&app, "/stickers", empty).await;
     }
 
     #[actix_web::test]
@@ -74,8 +56,8 @@ mod tests {
                 .configure(stk_backend::routes::stickers::configure)
         ).await;
 
-        let expected = create_test_stickers(&mut pool.get().unwrap(), rand::random::<u16>());
-        expect_n_stk(&app, expected).await;
+        let expected = create_stickers(&pool, rand::random::<u16>());
+        common::expect_n_elements::<Sticker>(&app, "/stickers", expected).await;
     }
 
     #[actix_web::test]
@@ -89,7 +71,7 @@ mod tests {
         ).await;
 
         // Gets id from a new sticker.
-        let created = create_test_stickers(&mut pool.get().unwrap(), 1).pop().unwrap().id;
+        let created = create_stickers(&pool, 1).pop().unwrap().id;
 
         // Should return a succes message.
         let req = test::TestRequest::default()
@@ -103,7 +85,8 @@ mod tests {
         assert_eq!(body, "Sticker deleted successfully");
 
         // Gets stickers, it should be an empty vector.
-        expect_n_stk(&app, vec![]).await;
+        let empty: Vec<Sticker> = vec![];
+        common::expect_n_elements::<Sticker>(&app, "/stickers", empty).await;
     }
 
     #[actix_web::test]
@@ -155,7 +138,7 @@ mod tests {
         let body = test::read_body(resp).await;
         let new_sticker: Sticker = serde_json::from_slice(&body).unwrap();
 
-        expect_n_stk(&app, vec![new_sticker]).await;
+        common::expect_n_elements(&app, "/stickers", vec![new_sticker]).await;
     }
 
     #[actix_web::test]
@@ -168,7 +151,7 @@ mod tests {
                 .configure(stk_backend::routes::stickers::configure)
         ).await;
 
-        let new_sticker = create_test_stickers(&mut pool.get().unwrap(), 1).pop().unwrap();
+        let new_sticker = create_stickers(&pool, 1).pop().unwrap();
         let new_label = "NEW";
         let new_url = "www.updated-url.com";
 
@@ -188,8 +171,9 @@ mod tests {
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
-        expect_n_stk(
+        common::expect_n_elements(
             &app,
+            "/stickers",
             vec![
                 Sticker {
                     id: updated_sticker_data.id.to_string(),
@@ -237,7 +221,7 @@ mod tests {
                 .configure(stk_backend::routes::stickers::configure)
         ).await;
 
-        let new_sticker = create_test_stickers(&mut pool.get().unwrap(), 1).pop().unwrap();
+        let new_sticker = create_stickers(&pool, 1).pop().unwrap();
         let new_label = "NEW";
         let new_url = "www.updated-url.com";
 
@@ -257,8 +241,9 @@ mod tests {
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_client_error());
 
-        expect_n_stk(
+        common::expect_n_elements(
             &app,
+            "/stickers",
             vec![new_sticker]
         ).await;
     }

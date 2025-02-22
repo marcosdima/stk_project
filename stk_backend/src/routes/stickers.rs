@@ -6,10 +6,8 @@ use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 async fn add_sticker(
     pool: web::Data<DbPool>,
     form: web::Json<NewSticker>,
-) -> impl Responder {
-    let conn = &mut pool.get().expect("Couldn't get DB connection from pool");
-    
-    match Sticker::create(conn, form.into_inner()) {
+) -> impl Responder {   
+    match Sticker::create(&pool, form.into_inner()) {
         Ok(new_sticker) => HttpResponse::Created().json(new_sticker),
         Err(e) => {
             log::error!("Failed to insert sticker: {:?}", e);
@@ -22,9 +20,7 @@ async fn add_sticker(
 async fn get_stickers(
     pool: web::Data<DbPool>,
 ) -> impl Responder {
-    let conn = &mut pool.get().expect("Couldn't get DB connection from pool");
-
-    match Sticker::get_all(conn) {
+    match Sticker::get_all(&pool) {
         Ok(stickers) => HttpResponse::Ok().json(stickers),
         Err(_) => HttpResponse::InternalServerError().finish(),
     }
@@ -35,10 +31,9 @@ async fn delete_sticker(
     pool: web::Data<DbPool>,
     path: web::Path<String>,
 ) -> impl Responder {
-    let conn = &mut pool.get().expect("Couldn't get DB connection from pool");
     let sticker_id = path.into_inner();
 
-    match Sticker::delete(conn, &sticker_id) {
+    match Sticker::delete(&pool, sticker_id) {
         Ok(rows_deleted) => {
             if rows_deleted > 0 {
                 HttpResponse::Ok().body("Sticker deleted successfully")
@@ -55,11 +50,9 @@ async fn update_sticker(
     pool: web::Data<DbPool>,
     data: web::Json<StickerUpdate>,
 ) -> impl Responder {
-    let conn = &mut pool.get().expect("Couldn't get DB connection from pool");
-
-    match Sticker::get_by_id(conn, &data.id.to_string()) {
+    match Sticker::get_by_id(&pool, data.id.to_string()) {
         Ok(_) => {
-            match Sticker::update(conn, data.into_inner()) {
+            match Sticker::update(&pool, data.into_inner()) {
                 Ok(_) => HttpResponse::Ok().body("Updated successfully"),
                 Err(_) => HttpResponse::InternalServerError().finish(),
             }

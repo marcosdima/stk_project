@@ -1,4 +1,4 @@
-use crate::models::{Model, categories::{Category, CategoryUpdate, NewCategory}};
+use crate::{errors::AppError, models::{categories::{Category, CategoryUpdate, NewCategory}, Model}};
 use crate::routes::DbPool;
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 
@@ -6,15 +6,11 @@ use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 async fn add_category(
     pool: web::Data<DbPool>,
     form: web::Json<NewCategory>,
-) -> impl Responder {
-    let conn = &mut pool.get().expect("Couldn't get DB connection from pool");
-    
-    match Category::create(conn, form.into_inner()) {
+) -> impl Responder { 
+    match Category::create(&pool, form.into_inner()) {
         Ok(new_category) => HttpResponse::Created().json(new_category),
-        Err(e) => {
-            log::error!("Failed to insert category: {:?}", e);
-            HttpResponse::InternalServerError().body("Failed to insert category")
-        }
+        Err(AppError::NotFound(err)) => HttpResponse::NotFound().body(format!("Error: {err}")),
+        Err(_) => HttpResponse::InternalServerError().body("Failed to insert category"),
     }
 }
 
@@ -22,9 +18,7 @@ async fn add_category(
 async fn get_categories(
     pool: web::Data<DbPool>,
 ) -> impl Responder {
-    let conn = &mut pool.get().expect("Couldn't get DB connection from pool");
-
-    match Category::get_all(conn) {
+    match Category::get_all(&pool) {
         Ok(categories) => HttpResponse::Ok().json(categories),
         Err(_) => HttpResponse::InternalServerError().finish(),
     }
@@ -35,10 +29,9 @@ async fn delete_category(
     pool: web::Data<DbPool>,
     path: web::Path<String>,
 ) -> impl Responder {
-    let conn = &mut pool.get().expect("Couldn't get DB connection from pool");
     let category_id = path.into_inner();
 
-    match Category::delete(conn, &category_id) {
+    match Category::delete(&pool, category_id) {
         Ok(rows_deleted) => {
             if rows_deleted > 0 {
                 HttpResponse::Ok().body("Category deleted successfully")
@@ -55,12 +48,12 @@ async fn update_category(
     pool: web::Data<DbPool>,
     data: web::Json<CategoryUpdate>,
 ) -> impl Responder {
-    let conn = &mut pool.get().expect("Couldn't get DB connection from pool");
-
-    match Category::get_by_id(conn, &data.id.to_string()) {
+    match Category::get_by_id(&pool, data.id.to_string()) {
         Ok(_) => {
-            match Category::update(conn, data.into_inner()) {
+            match Category::update(&pool, data.into_inner()) {
                 Ok(_) => HttpResponse::Ok().body("Updated successfully"),
+                Err(AppError::InvalidData(err)) => HttpResponse::BadRequest().body(format!("Error: {err}")),
+                Err(AppError::NotFound(err)) => HttpResponse::NotFound().body(format!("Error: {err}")),
                 Err(_) => HttpResponse::InternalServerError().finish(),
             }
         }
