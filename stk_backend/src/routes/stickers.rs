@@ -1,4 +1,4 @@
-use crate::models::{Model, stickers::{Sticker, StickerUpdate, NewSticker}};
+use crate::{models::{stickers::{NewSticker, Sticker, StickerUpdate}, Model}, routes::default_match_error};
 use crate::routes::DbPool;
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 
@@ -9,10 +9,7 @@ async fn add_sticker(
 ) -> impl Responder {   
     match Sticker::create(&pool, form.into_inner()) {
         Ok(new_sticker) => HttpResponse::Created().json(new_sticker),
-        Err(e) => {
-            log::error!("Failed to insert sticker: {:?}", e);
-            HttpResponse::InternalServerError().body("Failed to insert sticker")
-        }
+        Err(e) => default_match_error(e),
     }
 }
 
@@ -22,7 +19,7 @@ async fn get_stickers(
 ) -> impl Responder {
     match Sticker::get_all(&pool) {
         Ok(stickers) => HttpResponse::Ok().json(stickers),
-        Err(_) => HttpResponse::InternalServerError().finish(),
+        Err(e) => default_match_error(e),
     }
 }
 
@@ -41,7 +38,7 @@ async fn delete_sticker(
                 HttpResponse::NotFound().body("Sticker not found")
             }
         }
-        Err(_) => HttpResponse::InternalServerError().finish(),
+        Err(e) => default_match_error(e),
     }
 }
 
@@ -57,7 +54,7 @@ async fn update_sticker(
                 Err(_) => HttpResponse::InternalServerError().finish(),
             }
         }
-        Err(_) => HttpResponse::NotFound().body("Sticker not found"),
+        Err(e) => default_match_error(e),
     }
 }
 

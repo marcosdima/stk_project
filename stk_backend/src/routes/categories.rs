@@ -1,4 +1,4 @@
-use crate::{errors::AppError, models::{categories::{Category, CategoryUpdate, NewCategory}, Model}};
+use crate::{models::{categories::{Category, CategoryUpdate, NewCategory}, Model}, routes::default_match_error};
 use crate::routes::DbPool;
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 
@@ -9,8 +9,7 @@ async fn add_category(
 ) -> impl Responder { 
     match Category::create(&pool, form.into_inner()) {
         Ok(new_category) => HttpResponse::Created().json(new_category),
-        Err(AppError::NotFound(err)) => HttpResponse::NotFound().body(format!("Error: {err}")),
-        Err(_) => HttpResponse::InternalServerError().body("Failed to insert category"),
+        Err(e) => default_match_error(e),
     }
 }
 
@@ -20,7 +19,7 @@ async fn get_categories(
 ) -> impl Responder {
     match Category::get_all(&pool) {
         Ok(categories) => HttpResponse::Ok().json(categories),
-        Err(_) => HttpResponse::InternalServerError().finish(),
+        Err(e) => default_match_error(e),
     }
 }
 
@@ -39,7 +38,7 @@ async fn delete_category(
                 HttpResponse::NotFound().body("Category not found")
             }
         }
-        Err(_) => HttpResponse::InternalServerError().finish(),
+        Err(e) => default_match_error(e),
     }
 }
 
@@ -52,9 +51,7 @@ async fn update_category(
         Ok(_) => {
             match Category::update(&pool, data.into_inner()) {
                 Ok(_) => HttpResponse::Ok().body("Updated successfully"),
-                Err(AppError::InvalidData(err)) => HttpResponse::BadRequest().body(format!("Error: {err}")),
-                Err(AppError::NotFound(err)) => HttpResponse::NotFound().body(format!("Error: {err}")),
-                Err(_) => HttpResponse::InternalServerError().finish(),
+                Err(e) => default_match_error(e),
             }
         }
         Err(_) => HttpResponse::NotFound().body("Category not found"),
