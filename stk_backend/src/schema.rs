@@ -15,3 +15,16 @@ diesel::table! {
         url -> Text,
     }
 }
+
+diesel::table! {
+    sticker_category (sticker_id, category_id) {
+        sticker_id -> Text,
+        category_id -> Text,
+    }
+}
+
+diesel::allow_tables_to_appear_in_same_query!(
+    category,
+    sticker,
+    sticker_category,
+);
