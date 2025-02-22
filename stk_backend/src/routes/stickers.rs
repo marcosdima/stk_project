@@ -1,4 +1,15 @@
-use crate::{models::{stickers::{NewSticker, Sticker, StickerUpdate}, Model}, routes::default_match_error};
+use crate::{
+    models::{
+        stickers::{
+            NewSticker,
+            Sticker,
+            StickerUpdate
+        },
+        Model,
+        BasicModel
+    },
+    routes::default_match_error
+};
 use crate::routes::DbPool;
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 

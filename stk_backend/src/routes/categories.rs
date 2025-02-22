@@ -1,4 +1,19 @@
-use crate::{models::{categories::{Category, CategoryUpdate, NewCategory}, Model}, routes::default_match_error};
+use crate::{
+    models::{
+        categories::{
+            Category,
+            CategoryUpdate,
+            NewCategory,
+        }, 
+        sticker_category::{
+            NewStickerCategory,
+            StickerCategory,
+        },
+        BasicModel,
+        Model
+    },
+    routes::default_match_error
+};
 use crate::routes::DbPool;
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 
@@ -9,6 +24,17 @@ async fn add_category(
 ) -> impl Responder { 
     match Category::create(&pool, form.into_inner()) {
         Ok(new_category) => HttpResponse::Created().json(new_category),
+        Err(e) => default_match_error(e),
+    }
+}
+
+#[post("/assign")]
+async fn assign_category(
+    pool: web::Data<DbPool>,
+    form: web::Json<NewStickerCategory>,
+) -> impl Responder {
+    match StickerCategory::create(&pool, form.into_inner()) {
+        Ok(new_obj) => HttpResponse::Created().json(new_obj),
         Err(e) => default_match_error(e),
     }
 }
