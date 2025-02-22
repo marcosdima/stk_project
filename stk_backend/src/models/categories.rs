@@ -1,14 +1,11 @@
 use serde::{Deserialize, Serialize};
 use diesel::{
-    self, query_dsl::methods::FilterDsl,
-    AsChangeset, ExpressionMethods,
-    Insertable, Queryable,
-    RunQueryDsl
+    self, prelude::Insertable, query_dsl::methods::FilterDsl, AsChangeset, ExpressionMethods, Queryable, RunQueryDsl
 };
 use uuid::Uuid;
 use crate::{errors::AppError, routes::DbPool, schema::category};
 
-use super::common::Model;
+use super::common::{BasicModel, Model};
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Queryable, Insertable)]
 #[diesel(table_name = category)]
@@ -61,35 +58,8 @@ impl Category {
 }
 
 impl Model for Category {
-    type NewT = NewCategory;
     type UpdateT = CategoryUpdate;
-
-    fn new(data: Self::NewT) -> Self {
-        Category {
-            id: Uuid::new_v4().to_string(),
-            name: data.name,
-            sub_category_of: data.sub_category_of,
-        }
-    }
-
-    fn create(
-        pool: &DbPool,
-        data: Self::NewT
-    ) -> Result<Self, AppError> {
-        // The id is valid if exists a category with it.
-        if let Some(target) = data.sub_category_of.clone() {
-            Category::get_by_id(pool, target)?;
-        }
-
-        let new_category = Category::new(data);
-
-        diesel::insert_into(category::table)
-            .values(&new_category)
-            .execute(&mut Self::get_conn(pool)?)?;
-
-        Ok(new_category)
-    }
-
+    
     fn get_all(
         pool: &DbPool
     ) -> Result<Vec<Self>, AppError> {
@@ -112,15 +82,6 @@ impl Model for Category {
         } else {
             Err(AppError::NotFound("Category with id provided does not exist!"))
         }
-    }
-
-    fn delete(
-        pool: &DbPool,
-        element_id: String,
-    ) -> Result<usize, AppError> {
-        use crate::schema::category::dsl::*;
-
-        Ok(diesel::delete(category.filter(id.eq(element_id))).execute(&mut Self::get_conn(pool)?)?)
     }
 
     fn update(
@@ -147,6 +108,46 @@ impl Model for Category {
             .execute(&mut Self::get_conn(pool)?)?;
 
         Ok(())
+    }
+}
+
+impl BasicModel for Category {
+    type NewT = NewCategory;
+    type PK = String;
+    
+    fn new(data: Self::NewT) -> Self {
+        Category {
+            id: Uuid::new_v4().to_string(),
+            name: data.name,
+            sub_category_of: data.sub_category_of,
+        }
+    }
+
+    fn create(
+        pool: &DbPool,
+        data: Self::NewT
+    ) -> Result<Self, AppError> {
+        // The id is valid if exists a category with it.
+        if let Some(target) = data.sub_category_of.clone() {
+            Category::get_by_id(pool, target)?;
+        }
+
+        let new_category = Self::new(data);
+
+        diesel::insert_into(category::table)
+            .values(&new_category)
+            .execute(&mut Self::get_conn(pool)?)?;
+
+        Ok(new_category)
+    }
+
+    fn delete(
+        pool: &DbPool,
+        element_id: Self::PK,
+    ) -> Result<usize, AppError> {
+        use crate::schema::category::dsl::*;
+
+        Ok(diesel::delete(category.filter(id.eq(element_id))).execute(&mut Self::get_conn(pool)?)?)
     }
 }
 

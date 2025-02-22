@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use diesel::{self, AsChangeset, ExpressionMethods, Insertable, QueryDsl, Queryable, RunQueryDsl};
+use diesel::{self, prelude::Insertable, AsChangeset, ExpressionMethods, QueryDsl, Queryable, RunQueryDsl};
 use uuid::Uuid;
 use crate::{
     errors::AppError,
@@ -7,6 +7,8 @@ use crate::{
     schema::sticker,
     models::common::Model,
 };
+
+use super::common::BasicModel;
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Queryable, Insertable)]
 #[diesel(table_name = sticker)]
@@ -29,31 +31,8 @@ impl Sticker {
     }
 }
 
-impl Model for Sticker {
-    type NewT = NewSticker;
+impl Model for Sticker { 
     type UpdateT = StickerUpdate;
-
-    fn new(data: Self::NewT) -> Self {
-        Sticker {
-            id: Uuid::new_v4().to_string(),
-            label: data.label,
-            url: data.url,
-        }
-    }
-
-    fn create(
-        pool: &DbPool,
-        data: NewSticker
-    ) -> Result<Sticker, AppError> {
-        let new_sticker = Sticker::new(data.label, data.url);
-        let conn = &mut Self::get_conn(pool)?;
-
-        diesel::insert_into(sticker::table)
-            .values(&new_sticker)
-            .execute(conn)?;
-
-        Ok(new_sticker)
-    }
 
     fn get_all(
         pool: &DbPool
@@ -81,16 +60,6 @@ impl Model for Sticker {
         }
     }
 
-    fn delete(
-        pool: &DbPool,
-        element_id: String,
-    ) -> Result<usize, AppError> {
-        use crate::schema::sticker::dsl::*;
-        let conn = &mut Self::get_conn(pool)?;
-
-        Ok(diesel::delete(sticker.filter(id.eq(element_id))).execute(conn)?)
-    }
-
     fn update(
         pool: &DbPool,
         data: Self::UpdateT,
@@ -107,6 +76,46 @@ impl Model for Sticker {
 
         Ok(())
     }
+}
+
+impl BasicModel for Sticker {
+    type NewT = NewSticker;
+    type PK = String;
+    
+    fn new(data: Self::NewT) -> Self {
+        Sticker {
+            id: Uuid::new_v4().to_string(),
+            label: data.label,
+            url: data.url,
+        }
+    }
+
+    fn delete(
+        pool: &DbPool,
+        element_id: Self::PK,
+    ) -> Result<usize, AppError> {
+        use crate::schema::sticker::dsl::*;
+        let conn = &mut Self::get_conn(pool)?;
+
+        Ok(
+            diesel::delete(sticker.filter(id.eq(element_id)))
+                .execute(conn)?
+        )
+    }
+    
+    fn create(
+        pool: &DbPool,
+        data: Self::NewT
+    ) -> Result<Self, AppError> {
+        let new_object = <Self as BasicModel>::new(data);
+
+        diesel::insert_into(sticker::table)
+            .values(&new_object)
+            .execute(&mut Self::get_conn(pool)?)?;
+
+        Ok(new_object)
+    }
+
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
