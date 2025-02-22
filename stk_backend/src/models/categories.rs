@@ -104,7 +104,6 @@ impl Model for Category {
     ) -> Result<Self, AppError> {
         use crate::schema::category::dsl::*;
 
-        
         if let Ok(found) = category
             .filter(id.eq(element_id))
             .first::<Self>(&mut Self::get_conn(pool)?)
@@ -113,7 +112,6 @@ impl Model for Category {
         } else {
             Err(AppError::NotFound("Category with id provided does not exist!"))
         }
-        
     }
 
     fn delete(
