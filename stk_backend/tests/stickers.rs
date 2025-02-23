@@ -14,25 +14,16 @@ mod tests {
 
     use stk_backend::{
         models::stickers::{
-            NewSticker,
             Sticker,
             StickerUpdate,
         },
         routes::DbPool
     };
-    use crate::common::{self, default};
+    use crate::common::{self, default::get_sticker_default};
     use uuid::Uuid;
 
-    fn get_stk_default_data(id: u16) -> NewSticker {
-        let (label, url) = default::get_sticker_default(id);
-        NewSticker {
-            label,
-            url,
-        }
-    }
-
     fn create_stickers(pool: &DbPool, n: u16) -> Vec<Sticker> {
-        common::create_test_objects::<Sticker>(pool, n, get_stk_default_data)
+        common::create_test_objects::<Sticker>(pool, n, get_sticker_default)
     }
 
     #[actix_web::test]
@@ -123,7 +114,7 @@ mod tests {
                 .configure(stk_backend::routes::stickers::configure)
         ).await;
 
-        let new_sticker_data = get_stk_default_data(1);
+        let new_sticker_data = get_sticker_default(1);
 
         // Creates a sticker.
         let req = test::TestRequest::default()
@@ -157,7 +148,7 @@ mod tests {
         let new_url = "www.updated-url.com";
 
         let updated_sticker_data = StickerUpdate::new(
-            new_sticker.id,
+            new_sticker.id.clone(),
             String::from(new_label),
             String::from(new_url)
         ).unwrap();
@@ -170,6 +161,7 @@ mod tests {
             .set_payload(serde_json::to_string(&updated_sticker_data).unwrap())
             .to_request();
         let resp = test::call_service(&app, req).await;
+
         assert!(resp.status().is_success());
 
         common::expect_n_elements(

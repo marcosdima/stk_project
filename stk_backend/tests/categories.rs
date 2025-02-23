@@ -17,25 +17,22 @@ mod tests {
             categories::{
                 Category,
                 CategoryUpdate,
-                NewCategory
             },
+            sticker_category::{
+                NewStickerCategory,
+                StickerCategory
+            },
+            stickers::Sticker,
+            BasicModel,
             Model
         },
         routes::DbPool
     };
-    use crate::common::{self, default};
+    use crate::common::{self, default::{self, get_category_default}};
     use uuid::Uuid;
 
-    fn get_category_default_data(id: u16) -> NewCategory {
-        let name = default::get_category_default(id);
-        NewCategory {
-            name,
-            sub_category_of: None,
-        }
-    }
-
     fn create_categories(pool: &DbPool, n: u16) -> Vec<Category> {
-        common::create_test_objects::<Category>(pool, n, get_category_default_data)
+        common::create_test_objects::<Category>(pool, n, default::get_category_default)
     }
 
     fn create_n_categories_join(pool: &DbPool) -> Vec<Category> {
@@ -184,7 +181,7 @@ mod tests {
                 .configure(stk_backend::routes::categories::configure)
         ).await;
 
-        let new_category_data = get_category_default_data(1);
+        let new_category_data = get_category_default(1);
 
         // Creates a category.
         let req = test::TestRequest::default()
@@ -213,7 +210,7 @@ mod tests {
                 .configure(stk_backend::routes::categories::configure)
         ).await;
 
-        let mut new_category_data = get_category_default_data(1);
+        let mut new_category_data = get_category_default(1);
         new_category_data.sub_category_of = Some(String::from("no-id"));
 
         // Creates a category.
@@ -311,7 +308,7 @@ mod tests {
                 .configure(stk_backend::routes::categories::configure)
         ).await;
 
-        let new_category = common::create_test_objects::<Category>(&pool, 1, get_category_default_data).pop().unwrap();
+        let new_category = create_categories(&pool, 1).pop().unwrap();
         let new_name = "NEW";
         let new_url = "www.updated-url.com";
 
@@ -336,5 +333,46 @@ mod tests {
             "/categories", 
             vec![new_category]
         ).await;
+    }
+
+    #[actix_web::test]
+    async fn test_assign_category() {
+        let pool = web::Data::new(common::init_test_db_pool());
+
+        let app = test::init_service(
+            App::new()
+                .app_data(pool.clone())
+                .configure(stk_backend::routes::categories::configure)
+        ).await;
+
+        // Get default data.
+        let new_category_data = default::get_category_default(1);
+        let new_sticker_data = default::get_sticker_default(1);
+
+        // Creates each model instance.
+        let cat = Category::create(&pool, new_category_data).unwrap();
+        let stk = Sticker::create(&pool, new_sticker_data).unwrap();
+
+        // Sets new data models.
+        let new_stk_cat_data = NewStickerCategory::new(stk.id.clone(), cat.id.clone()).unwrap();
+
+        // Creates a category.
+        let req = test::TestRequest::default()
+            .method(Method::POST)
+            .uri(&format!("/categories/assign"))
+            .insert_header(ContentType::json())
+            .set_payload(serde_json::to_string(&new_stk_cat_data).unwrap())
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
+
+        // Prepare comparation sets.
+        let curr_stk = StickerCategory::category_stickers(&pool, cat.id.clone()).unwrap();
+        let curr_cat = StickerCategory::sticker_categories(&pool, stk.id.clone()).unwrap();
+        let expected_stk = vec![stk.id];
+        let expected_cat = vec![cat.id];
+        
+        assert_eq!(expected_stk, curr_stk);
+        assert_eq!(expected_cat, curr_cat);
     }
 }
