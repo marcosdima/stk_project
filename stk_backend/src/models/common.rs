@@ -19,6 +19,11 @@ pub trait Model: Debug + PartialEq + for<'a> Deserialize<'a> + BasicModel {
         element_id: String
     ) -> Result<Self, AppError>;
 
+    fn get_in_id_array(
+        pool: &DbPool,
+        elements: Vec<String>
+    ) -> Result<Vec<Self>, AppError>;
+
     fn update(
         pool: &DbPool,
         data: Self::UpdateT

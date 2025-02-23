@@ -65,16 +65,27 @@ impl Model for Sticker {
         data: Self::UpdateT,
     ) -> Result<(), AppError> {
         use crate::schema::sticker::dsl::*;
-        let conn = &mut Self::get_conn(pool)?;
-
         // Checks if category exists...
         let _ = Self::get_by_id(pool, data.id.to_string())?;
 
         diesel::update(sticker.filter(id.eq(&data.id.to_string())))
             .set(&data)
-            .execute(conn)?;
+            .execute(&mut Self::get_conn(pool)?)?;
 
         Ok(())
+    }
+    
+    fn get_in_id_array(
+        pool: &DbPool,
+        elements: Vec<String>
+    ) -> Result<Vec<Self>, AppError> {
+        use crate::schema::sticker::dsl::*;
+        
+        let res = sticker.filter(
+            id.eq_any(elements)
+        ).load::<Sticker>(&mut Self::get_conn(pool)?)?;
+
+        Ok(res)
     }
 }
 

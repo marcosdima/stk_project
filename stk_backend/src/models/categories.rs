@@ -109,6 +109,19 @@ impl Model for Category {
 
         Ok(())
     }
+
+    fn get_in_id_array(
+        pool: &DbPool,
+        elements: Vec<String>
+    ) -> Result<Vec<Self>, AppError> {
+        use crate::schema::category::dsl::*;
+
+        let res = category.filter(
+            id.eq_any(elements)
+        ).load::<Category>(&mut Self::get_conn(pool)?)?;
+
+        Ok(res)
+    }
 }
 
 impl BasicModel for Category {
