@@ -1,23 +1,26 @@
-use diesel::{prelude::{Insertable, Queryable}, ExpressionMethods, QueryDsl, RunQueryDsl};
-use serde::{Serialize, Deserialize};
+use diesel::{
+    prelude::{
+        Insertable,
+        Queryable},
+        ExpressionMethods,
+        QueryDsl,
+        RunQueryDsl
+    };
+use serde::{
+    Serialize,
+    Deserialize
+};
 use uuid::Uuid;
 
 use crate::{
     errors::AppError,
     routes::DbPool,
-    schema::{
+    schema::sticker_category::{
         self,
-        sticker_category::{
-            self,
-            sticker_id,
-            category_id,
-        }
+        category_id, sticker_id,
     }
 };
-use super::{
-    categories::Category,
-    common::BasicModel, stickers::Sticker
-};
+use super::common::BasicModel;
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Queryable, Insertable)]
 #[diesel(table_name = sticker_category)]
@@ -73,39 +76,30 @@ impl StickerCategory {
     pub fn sticker_categories(
         pool: &DbPool,
         target: String,
-    ) -> Result<Vec<Category>, AppError>{
-        use crate::schema::category::dsl::category;
+    ) -> Result<Vec<String>, AppError>{
         use crate::schema::sticker_category::dsl::sticker_category;
 
         let conn = &mut Self::get_conn(pool)?;
-        let conn2 = &mut Self::get_conn(pool)?;
 
-        let categories_ids: Vec<StickerCategory> = sticker_category.filter(sticker_id.eq(target)).load(conn)?;
-
-        let res = category.filter(
-            schema::category::id.eq_any(categories_ids.into_iter().map(|sc| sc.category_id.clone()))
-        ).load(conn2)?;
-
-        Ok(res)
+        let stk_cat_ids: Vec<StickerCategory> = sticker_category.filter(sticker_id.eq(target)).load(conn)?;
+        let elements = stk_cat_ids.into_iter().map(|sc| sc.category_id.clone()).collect();
+        
+        Ok(elements)
     }
 
     pub fn category_stickers(
         pool: &DbPool,
         target: String,
-    ) -> Result<Vec<Sticker>, AppError>{
-        use crate::schema::sticker::dsl::sticker;
+    ) -> Result<Vec<String>, AppError>{
         use crate::schema::sticker_category::dsl::sticker_category;
 
         let conn = &mut Self::get_conn(pool)?;
-        let conn2 = &mut Self::get_conn(pool)?;
 
-        let stickers_ids: Vec<StickerCategory> = sticker_category.filter(category_id.eq(target)).load(conn)?;
-
-        let res = sticker.filter(
-            schema::sticker::id.eq_any(stickers_ids.into_iter().map(|sc| sc.sticker_id.clone()))
-        ).load(conn2)?;
+        let stk_cat_ids: Vec<StickerCategory> = sticker_category.filter(category_id.eq(target)).load(conn)?;
         
-        Ok(res)
+        let elements = stk_cat_ids.into_iter().map(|sc| sc.sticker_id.clone()).collect();
+
+        Ok(elements)
     }
 }
 
@@ -113,4 +107,15 @@ impl StickerCategory {
 pub struct NewStickerCategory {
     sticker_id: Uuid,
     category_id: Uuid,
+}
+
+impl NewStickerCategory {
+    pub fn new(stk_id: String, cat_id: String) -> Result<Self, uuid::Error> {
+        let uuid_stk = Uuid::parse_str(&stk_id)?;
+        let uuid_cat = Uuid::parse_str(&cat_id)?;
+        Ok(NewStickerCategory {
+            category_id: uuid_cat,
+            sticker_id: uuid_stk,
+        })
+    }
 }
