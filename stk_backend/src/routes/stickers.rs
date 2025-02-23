@@ -62,7 +62,7 @@ async fn update_sticker(
         Ok(_) => {
             match Sticker::update(&pool, data.into_inner()) {
                 Ok(_) => HttpResponse::Ok().body("Updated successfully"),
-                Err(_) => HttpResponse::InternalServerError().finish(),
+                Err(e) => default_match_error(e),
             }
         }
         Err(e) => default_match_error(e),
