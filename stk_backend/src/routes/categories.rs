@@ -12,10 +12,18 @@ use crate::{
         BasicModel,
         Model
     },
-    routes::default_match_error
+    routes::default_match_error,
 };
 use crate::routes::DbPool;
-use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
+use actix_web::{
+    delete,
+    get,
+    post,
+    put,
+    web,
+    HttpResponse,
+    Responder
+};
 
 #[post("")]
 async fn add_category(
@@ -45,6 +53,19 @@ async fn get_categories(
 ) -> impl Responder {
     match Category::get_all(&pool) {
         Ok(categories) => HttpResponse::Ok().json(categories),
+        Err(e) => default_match_error(e),
+    }
+}
+
+#[get("/{id}/stickers")]
+async fn get_stickers(
+    pool: web::Data<DbPool>,
+    path: web::Path<String>,
+) -> impl Responder {
+    let category_id = path.into_inner();
+
+    match StickerCategory::category_stickers(&pool, category_id) {
+        Ok(ids) => HttpResponse::Ok().json(ids),
         Err(e) => default_match_error(e),
     }
 }
@@ -92,5 +113,6 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .service(delete_category)
             .service(update_category)
             .service(assign_category)
+            .service(get_stickers)
     );
 }
