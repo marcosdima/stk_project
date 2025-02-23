@@ -23,12 +23,13 @@ mod tests {
         },
         routes::DbPool
     };
-    use crate::common;
+    use crate::common::{self, default};
     use uuid::Uuid;
 
     fn get_category_default_data(id: u16) -> NewCategory {
+        let name = default::get_category_default(id);
         NewCategory {
-            name: format!("Test Category - {id}"),
+            name,
             sub_category_of: None,
         }
     }

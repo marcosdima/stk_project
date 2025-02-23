@@ -1,24 +1,33 @@
+pub mod default;
+
 use actix_http::Request;
 use actix_web::{
-    dev::{Service, ServiceResponse},
+    dev::{
+        Service,
+        ServiceResponse
+    },
     http::header::ContentType,
     test,
-    Error
+    Error,
 };
+
 use diesel::{
-    r2d2::{self, ConnectionManager},
-    SqliteConnection
+    r2d2::{
+        self,
+        ConnectionManager,
+    },
+    SqliteConnection,
 };
 use diesel_migrations::{
     self,
     embed_migrations,
     EmbeddedMigrations,
-    MigrationHarness
+    MigrationHarness,
 };
 use serde::Deserialize;
 use stk_backend::{
     models::Model,
-    routes::DbPool
+    routes::DbPool,
 };
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
 

@@ -20,13 +20,14 @@ mod tests {
         },
         routes::DbPool
     };
-    use crate::common;
+    use crate::common::{self, default};
     use uuid::Uuid;
 
     fn get_stk_default_data(id: u16) -> NewSticker {
+        let (label, url) = default::get_sticker_default(id);
         NewSticker {
-            label: format!("Test Sticker - {id}"),
-            url: format!("www.some-url-{id}.com.ar"),
+            label,
+            url,
         }
     }
 
