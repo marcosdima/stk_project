@@ -91,5 +91,6 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .service(add_category)
             .service(delete_category)
             .service(update_category)
+            .service(assign_category)
     );
 }
