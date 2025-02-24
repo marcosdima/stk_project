@@ -69,7 +69,6 @@ pub async fn parse_response<T: Model + for<'a> Deserialize<'a>>(resp: ServiceRes
     test::read_body_json(resp).await
 }
 
-#[allow(dead_code)] // TOTHINK: I think this happens beacuse is being imported inside a mod... maybe ¿)
 pub async fn get_element<T: Model>(
     app: &impl Service<Request, Response = ServiceResponse, Error = Error>, 
     route: &str,
@@ -97,7 +96,6 @@ pub async fn get_elements<T: Model>(
 
     parse_response::<T>(resp).await
 }
-
 
 pub async fn expect_n_elements<T: Model>(
     app: &impl Service<Request, Response = ServiceResponse, Error = Error>, 

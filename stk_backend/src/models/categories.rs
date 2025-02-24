@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use diesel::{
-    self, prelude::Insertable, query_dsl::methods::FilterDsl, AsChangeset, ExpressionMethods, Queryable, RunQueryDsl
+    self, prelude::Insertable, AsChangeset, ExpressionMethods, QueryDsl, Queryable, RunQueryDsl
 };
 use uuid::Uuid;
 use crate::{errors::AppError, routes::DbPool, schema::category};
@@ -25,7 +25,9 @@ impl Category {
             id, name, sub_category_of: sco
         }
     }
+    
     pub fn get_sub_category(&self) -> &Option<String> { &self.sub_category_of }
+    
     pub fn validate_sub_category_of(
         pool: &DbPool,
         target: String,
@@ -54,6 +56,21 @@ impl Category {
         }
         
         Ok(())
+    }
+
+    pub fn last(
+        self,
+        pool: &DbPool,
+    ) -> Result<bool, AppError> {
+        use crate::schema::category::dsl::*;
+
+        let count: i64 = diesel::QueryDsl::filter(
+            category,
+            sub_category_of.eq(self.id.clone()))
+            .count()
+            .get_result(&mut Self::get_conn(pool)?)?;
+
+        Ok(count == 0)
     }
 }
 
