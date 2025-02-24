@@ -44,6 +44,6 @@ pub fn default_match_error(
         AppError::InvalidData(err) => HttpResponse::BadRequest().body(format!("{err}")),
         AppError::NotFound(err) => HttpResponse::NotFound().body(format!("{err}")),
         AppError::DieselError(err) => HttpResponse::BadRequest().body(format!("{err}")),
-        r => HttpResponse::InternalServerError().finish(),
+        _ => HttpResponse::InternalServerError().finish(),
     }
 }
