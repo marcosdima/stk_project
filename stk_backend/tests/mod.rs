@@ -6,7 +6,6 @@ mod categories;
 #[cfg(test)]
 mod stickers;
 
-
 pub use actix_web::{
     http::{
         header::ContentType,
