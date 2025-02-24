@@ -69,19 +69,41 @@ pub async fn parse_response<T: Model + for<'a> Deserialize<'a>>(resp: ServiceRes
     test::read_body_json(resp).await
 }
 
-pub async fn expect_n_elements<T: Model>(
+#[allow(dead_code)] // TOTHINK: I think this happens beacuse is being imported inside a mod... maybe ¿)
+pub async fn get_element<T: Model>(
     app: &impl Service<Request, Response = ServiceResponse, Error = Error>, 
     route: &str,
-    expected: Vec<T>
-) {
+) -> T {
     let req = test::TestRequest::default()
         .uri(route)
         .insert_header(ContentType::plaintext())
         .to_request();
 
     let resp = test::call_service(app, req).await;
-    
-    let categories = parse_response::<T>(resp).await;
 
+    test::read_body_json(resp).await
+}
+
+pub async fn get_elements<T: Model>(
+    app: &impl Service<Request, Response = ServiceResponse, Error = Error>, 
+    route: &str,
+) -> Vec<T> {
+    let req = test::TestRequest::default()
+        .uri(route)
+        .insert_header(ContentType::plaintext())
+        .to_request();
+
+    let resp = test::call_service(app, req).await;
+
+    parse_response::<T>(resp).await
+}
+
+
+pub async fn expect_n_elements<T: Model>(
+    app: &impl Service<Request, Response = ServiceResponse, Error = Error>, 
+    route: &str,
+    expected: Vec<T>
+) {
+    let categories = get_elements(app, route).await;
     assert_eq!(expected, categories);
 }
