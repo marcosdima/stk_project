@@ -1,12 +1,13 @@
 use crate::{
     models::{
+        sticker_category::StickerCategory,
         stickers::{
             NewSticker,
             Sticker,
             StickerUpdate
         },
-        Model,
-        BasicModel
+        BasicModel,
+        Model
     },
     routes::default_match_error
 };
@@ -30,6 +31,19 @@ async fn get_stickers(
 ) -> impl Responder {
     match Sticker::get_all(&pool) {
         Ok(stickers) => HttpResponse::Ok().json(stickers),
+        Err(e) => default_match_error(e),
+    }
+}
+
+#[get("/{id}/categories")]
+async fn get_sticker_categories(
+    pool: web::Data<DbPool>,
+    path: web::Path<String>,
+) -> impl Responder {
+    let sticker_id = path.into_inner();
+    println!("ID: {:?}", sticker_id);
+    match StickerCategory::sticker_categories(&pool, sticker_id) {
+        Ok(ids) => HttpResponse::Ok().json(ids),
         Err(e) => default_match_error(e),
     }
 }
@@ -76,5 +90,6 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .service(add_sticker)
             .service(delete_sticker)
             .service(update_sticker)
+            .service(get_sticker_categories)
     );
 }

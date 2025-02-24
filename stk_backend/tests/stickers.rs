@@ -13,13 +13,13 @@ mod tests {
     };
 
     use stk_backend::{
-        models::stickers::{
+        models::{categories::Category, sticker_category::{NewStickerCategory, StickerCategory}, stickers::{
             Sticker,
             StickerUpdate,
-        },
+        }, BasicModel},
         routes::DbPool
     };
-    use crate::common::{self, default::get_sticker_default};
+    use crate::common::{self, default::{self, get_sticker_default}};
     use uuid::Uuid;
 
     fn create_stickers(pool: &DbPool, n: u16) -> Vec<Sticker> {
@@ -241,5 +241,41 @@ mod tests {
         ).await;
     }
 
+    #[actix_web::test]
+    async fn test_get_sticker_categories() {
+        let pool = web::Data::new(common::init_test_db_pool());
 
+        let app = test::init_service(
+            App::new()
+                .app_data(pool.clone())
+                .configure(stk_backend::routes::stickers::configure)
+        ).await;
+
+        // Get default data.
+        let new_category_data = default::get_category_default(1);
+        let new_sticker_data = default::get_sticker_default(1);
+
+        // Creates each model instance.
+        let cat = Category::create(&pool, new_category_data).unwrap();
+        let stk = Sticker::create(&pool, new_sticker_data).unwrap();
+
+        // Sets new data models.
+        let new_stk_cat_data = NewStickerCategory::new(stk.id.clone(), cat.id.clone()).unwrap();
+
+        // Assigns a category.
+        let _ = StickerCategory::create(&pool, new_stk_cat_data);
+ 
+        // Tries again, with the same data.
+        let req = test::TestRequest::default()
+            .method(Method::GET)
+            .uri(&format!("/stickers/{}/categories", stk.id))
+            .insert_header(ContentType::json())
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
+
+        let body = test::read_body(resp).await;
+        let stickers: Vec<String> = serde_json::from_slice(&body).unwrap();
+        assert_eq!(stickers, vec![cat.id])
+    }
 }
