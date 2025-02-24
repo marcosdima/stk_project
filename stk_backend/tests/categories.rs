@@ -403,6 +403,10 @@ mod tests {
             "sticker_id": stk.id.clone(),
             "category_id": "wrong-id",
         });
+        let new_stk_cat_data_uuid = serde_json::json!({
+            "sticker_id": Uuid::new_v4().to_string(),
+            "category_id": Uuid::new_v4().to_string(),
+        });
 
         // Tries to assing.
         let req = test::TestRequest::default()
@@ -422,6 +426,17 @@ mod tests {
             .set_payload(serde_json::to_string(&new_stk_cat_data2).unwrap())
             .to_request();
         let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_client_error());
+
+        // Tries again.
+        let req = test::TestRequest::default()
+            .method(Method::POST)
+            .uri(&format!("/categories/assign"))
+            .insert_header(ContentType::json())
+            .set_payload(serde_json::to_string(&new_stk_cat_data_uuid).unwrap())
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+        println!("{:?}", resp);
         assert!(resp.status().is_client_error());
     }
 
@@ -513,6 +528,4 @@ mod tests {
         let stickers: Vec<String> = serde_json::from_slice(&body).unwrap();
         assert_eq!(stickers, vec![stk.id])
     }
-
-
 }
