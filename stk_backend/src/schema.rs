@@ -23,6 +23,12 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    tag (name) {
+        name -> Text,
+    }
+}
+
 diesel::allow_tables_to_appear_in_same_query!(
     category,
     sticker,
