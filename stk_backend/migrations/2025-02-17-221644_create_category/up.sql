@@ -3,4 +3,6 @@ CREATE TABLE category (
     name TEXT NOT NULL,
     sub_category_of TEXT,
     FOREIGN KEY(sub_category_of) REFERENCES category(id)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE
 );
