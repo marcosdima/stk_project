@@ -57,6 +57,20 @@ async fn get_categories(
     }
 }
 
+#[get("/{id}")]
+async fn get_category(
+    pool: web::Data<DbPool>,
+    path: web::Path<String>,
+) -> impl Responder {
+    let category_id = path.into_inner();
+
+    match Category::get_by_id(&pool, category_id) {
+        Ok(ids) => HttpResponse::Ok().json(ids),
+        Err(e) => default_match_error(e),
+    }
+}
+
+
 #[get("/{id}/stickers")]
 async fn get_stickers(
     pool: web::Data<DbPool>,
@@ -109,6 +123,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/categories")
             .service(get_categories)
+            .service(get_category)
             .service(add_category)
             .service(delete_category)
             .service(update_category)
