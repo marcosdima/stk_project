@@ -39,11 +39,11 @@ pub fn get_connection_from_pool(pool: &DbPool) -> PooledConnection<ConnectionMan
 pub fn default_match_error(
     err: AppError,
 ) -> HttpResponse {
-    println!("Error: {err}");
+    println!("Error: {}", err.message());
     match err {
         AppError::InvalidData(err) => HttpResponse::BadRequest().body(format!("{err}")),
         AppError::NotFound(err) => HttpResponse::NotFound().body(format!("{err}")),
         AppError::DieselError(err) => HttpResponse::BadRequest().body(format!("{err}")),
-        r => { println!("{:?}", r);HttpResponse::InternalServerError().finish()},
+        r => HttpResponse::InternalServerError().finish(),
     }
 }
