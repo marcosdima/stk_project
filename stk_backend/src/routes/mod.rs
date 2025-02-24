@@ -1,8 +1,14 @@
 use actix_web::HttpResponse;
-use diesel::{r2d2, SqliteConnection};
-
+use diesel::{
+    r2d2::{
+        self,
+        ConnectionManager,
+        PooledConnection
+    },
+    RunQueryDsl,
+    SqliteConnection
+};
 use crate::errors::AppError;
-
 pub mod stickers;
 pub mod hello;
 pub mod categories;
@@ -17,12 +23,27 @@ pub fn initialize_db_pool() -> DbPool {
         .expect("database URL should be valid path to SQLite DB file")
 }
 
+pub fn get_connection_from_pool(pool: &DbPool) -> PooledConnection<ConnectionManager<SqliteConnection>> {
+    let mut conn = pool
+        .get()
+        .expect("Failed to get connection from pool");
+
+    // Activates FK.
+    diesel::sql_query("PRAGMA foreign_keys = ON;")
+        .execute(&mut conn)
+        .expect("Failed to enable foreign key support");
+    
+    conn
+}
+
 pub fn default_match_error(
     err: AppError,
 ) -> HttpResponse {
+    println!("Error: {err}");
     match err {
         AppError::InvalidData(err) => HttpResponse::BadRequest().body(format!("{err}")),
         AppError::NotFound(err) => HttpResponse::NotFound().body(format!("{err}")),
-        _ => HttpResponse::InternalServerError().finish(),
+        AppError::DieselError(err) => HttpResponse::BadRequest().body(format!("{err}")),
+        r => { println!("{:?}", r);HttpResponse::InternalServerError().finish()},
     }
 }

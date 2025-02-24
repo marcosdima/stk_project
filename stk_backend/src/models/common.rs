@@ -5,7 +5,7 @@ use diesel::SqliteConnection;
 use serde::Deserialize;
 
 use crate::errors::AppError;
-use crate::routes::DbPool;
+use crate::routes::{self, DbPool};
 
 pub trait Model: Debug + PartialEq + for<'a> Deserialize<'a> + BasicModel {
     type UpdateT;
@@ -39,7 +39,7 @@ pub trait BasicModel: Sized {
     fn get_conn(
         pool: &DbPool
     ) -> Result<PooledConnection<ConnectionManager<SqliteConnection>>, AppError> {
-        Ok(pool.get().expect("Couldn't get DB connection from pool"))
+        Ok(routes::get_connection_from_pool(pool))
     }
     
     fn create(
