@@ -6,13 +6,7 @@ fn create_stickers(pool: &DbPool, n: u16) -> Vec<Sticker> {
 
 #[actix_web::test]
 async fn test_update_sticker() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::stickers::configure)
-    ).await;
+    let (app, pool) = get_app().await;
 
     let new_sticker = create_stickers(&pool, 1).pop().unwrap();
     let new_label = "NEW";
@@ -50,13 +44,7 @@ async fn test_update_sticker() {
 
 #[actix_web::test]
 async fn test_update_sticker_not_found() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::stickers::configure)
-    ).await;
+    let (app, _) = get_app().await;
 
     let updated_sticker_data = StickerUpdate::new(
         Uuid::new_v4().to_string(),
@@ -77,13 +65,7 @@ async fn test_update_sticker_not_found() {
 
 #[actix_web::test]
 async fn test_update_sticker_wrong_id() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::stickers::configure)
-    ).await;
+    let (app, pool) = get_app().await;
 
     let new_sticker = create_stickers(&pool, 1).pop().unwrap();
     let new_label = "NEW";

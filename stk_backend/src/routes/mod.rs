@@ -12,6 +12,7 @@ use crate::errors::AppError;
 pub mod stickers;
 pub mod hello;
 pub mod categories;
+pub mod tags;
 
 pub type DbPool = r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>;
 

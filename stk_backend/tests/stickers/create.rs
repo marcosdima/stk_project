@@ -2,13 +2,7 @@ use crate::*;
 
 #[actix_web::test]
 async fn test_create_sticker() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::stickers::configure)
-    ).await;
+    let (app, _) = get_app().await;
 
     let new_sticker_data = get_sticker_default(1);
 

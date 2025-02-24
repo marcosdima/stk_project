@@ -5,10 +5,7 @@ use actix_web::{
     dev::{
         Service,
         ServiceResponse
-    },
-    http::header::ContentType,
-    test,
-    Error,
+    }, http::header::ContentType, test, web::{self, Data}, App, Error
 };
 
 use diesel::{
@@ -104,4 +101,18 @@ pub async fn expect_n_elements<T: Model>(
 ) {
     let categories = get_elements(app, route).await;
     assert_eq!(expected, categories);
+}
+
+pub async fn get_app() -> (impl Service<Request, Response = ServiceResponse, Error = Error>, Data<DbPool>) {
+    let pool = web::Data::new(init_test_db_pool());
+
+    let app = test::init_service(
+        App::new()
+            .app_data(pool.clone())
+            .configure(stk_backend::routes::stickers::configure)
+            .configure(stk_backend::routes::categories::configure)
+            .configure(stk_backend::routes::tags::configure)
+    ).await;
+
+    (app, pool)
 }

@@ -29,13 +29,7 @@ fn create_n_categories_join(pool: &DbPool) -> Vec<Category> {
 
 #[actix_web::test]
 async fn test_update_category_circular_error() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::categories::configure)
-    ).await;
+    let (app, pool) = get_app().await;
 
     // Make the last connection, creating a circular relation...
     let categories = create_n_categories_join(&pool);
@@ -64,13 +58,7 @@ async fn test_update_category_circular_error() {
 
 #[actix_web::test]
 async fn test_update_category() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::categories::configure)
-    ).await;
+    let (app, pool) = get_app().await;
 
     let new_category = create_categories(&pool, 1).pop().unwrap();
     let new_name = "NEW";
@@ -106,13 +94,7 @@ async fn test_update_category() {
 
 #[actix_web::test]
 async fn test_update_category_not_found() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::categories::configure)
-    ).await;
+    let (app, _) = get_app().await;
 
     let updated_category_data = CategoryUpdate::new(
         Uuid::new_v4().to_string(),

@@ -18,13 +18,7 @@ async fn test_get_stickers_empty() {
 
 #[actix_web::test]
 async fn test_get_stickers() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::stickers::configure)
-    ).await;
+    let (app, pool) = get_app().await;
 
     let expected = create_stickers(&pool, rand::random::<u16>());
     common::expect_n_elements::<Sticker>(&app, "/stickers", expected).await;
@@ -32,13 +26,7 @@ async fn test_get_stickers() {
 
 #[actix_web::test]
 async fn test_get_sticker_categories() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::stickers::configure)
-    ).await;
+    let (app, pool) = get_app().await;
 
     // Get default data.
     let new_category_data = default::get_category_default(1);

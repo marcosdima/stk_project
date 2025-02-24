@@ -6,13 +6,7 @@ fn create_stickers(pool: &DbPool, n: u16) -> Vec<Sticker> {
 
 #[actix_web::test]
 async fn test_delete_stickers() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::stickers::configure)
-    ).await;
+    let (app, pool) = get_app().await;
 
     // Gets id from a new sticker.
     let created = create_stickers(&pool, 1).pop().unwrap().id;
@@ -35,13 +29,7 @@ async fn test_delete_stickers() {
 
 #[actix_web::test]
 async fn test_delete_stickers_not_found() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::stickers::configure)
-    ).await;
+    let (app, _) = get_app().await;
 
     // Should return a succes message.
     let req = test::TestRequest::default()

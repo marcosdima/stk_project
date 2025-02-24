@@ -2,13 +2,7 @@ use crate::*;
 
 #[actix_web::test]
 async fn test_assign_category() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::categories::configure)
-    ).await;
+    let (app, pool) = get_app().await;
 
     // Get default data.
     let new_category_data = default::get_category_default(1);
@@ -43,13 +37,7 @@ async fn test_assign_category() {
 
 #[actix_web::test]
 async fn test_assign_category_wrong_id() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::categories::configure)
-    ).await;
+    let (app, pool) = get_app().await;
 
     // Get default data.
     let new_category_data = default::get_category_default(1);
@@ -107,13 +95,7 @@ async fn test_assign_category_wrong_id() {
 
 #[actix_web::test]
 async fn test_assign_category_twice() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::categories::configure)
-    ).await;
+    let (app, pool) = get_app().await;
 
     // Get default data.
     let new_category_data = default::get_category_default(1);
@@ -151,13 +133,7 @@ async fn test_assign_category_twice() {
 
 #[actix_web::test]
 async fn test_assign_category_with_sub_category() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::categories::configure)
-    ).await;
+    let (app, pool) = get_app().await;
 
     // Get default data.
     let new_category_data = default::get_category_default(1);

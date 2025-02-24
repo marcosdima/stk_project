@@ -6,13 +6,7 @@ pub fn create_categories(pool: &DbPool, n: u16) -> Vec<Category> {
 
 #[actix_web::test]
 async fn test_delete_categories() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::categories::configure)
-    ).await;
+    let (app, pool) = get_app().await;
 
     // Gets id from a new category.
     let created = create_categories(&pool, 1).pop().unwrap().id;
@@ -35,13 +29,7 @@ async fn test_delete_categories() {
 
 #[actix_web::test]
 async fn test_delete_categories_not_found() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::categories::configure)
-    ).await;
+    let (app, _) = get_app().await;
 
     // Should return a succes message.
     let req = test::TestRequest::default()
@@ -58,13 +46,7 @@ async fn test_delete_categories_not_found() {
 
 #[actix_web::test]
 async fn test_delete_category_but_it_has_subcategories() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::categories::configure)
-    ).await;
+    let (app, pool) = get_app().await;
 
     // Create two categories.
     let new_category_data = Category::create(&pool, get_category_default(1)).unwrap();

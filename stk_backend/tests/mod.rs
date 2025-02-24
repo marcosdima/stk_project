@@ -43,6 +43,7 @@ pub use crate::common::{
         get_sticker_default,
     },
     get_element,
+    get_app
 };
 
 pub use uuid::Uuid;

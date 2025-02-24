@@ -18,13 +18,7 @@ async fn test_get_categories_empty() {
 
 #[actix_web::test]
 async fn test_get_categories() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::categories::configure)
-    ).await;
+    let (app, pool) = get_app().await;
 
     let expected = create_categories(&pool, rand::random::<u16>());
     common::expect_n_elements(&app, "/categories", expected).await;
@@ -32,13 +26,7 @@ async fn test_get_categories() {
 
 #[actix_web::test]
 async fn test_get_category() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::categories::configure)
-    ).await;
+    let (app, pool) = get_app().await;
 
     let expected = create_categories(&pool, 1).first().unwrap().to_owned();
     let result = common::get_element::<Category>(&app, &format!("/categories/{}", expected.id.clone())).await;
@@ -47,13 +35,7 @@ async fn test_get_category() {
 
 #[actix_web::test]
 async fn test_get_category_stickers() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::categories::configure)
-    ).await;
+    let (app, pool) = get_app().await;
 
     // Get default data.
     let new_category_data = default::get_category_default(1);

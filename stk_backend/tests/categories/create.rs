@@ -2,13 +2,7 @@ use crate::*;
 
 #[actix_web::test]
 async fn test_create_category() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::categories::configure)
-    ).await;
+    let (app, _) = get_app().await;
 
     let new_category_data = get_category_default(1);
 
@@ -31,13 +25,7 @@ async fn test_create_category() {
 
 #[actix_web::test]
 async fn test_create_category_wrong_sub_category_of() {
-    let pool = web::Data::new(common::init_test_db_pool());
-
-    let app = test::init_service(
-        App::new()
-            .app_data(pool.clone())
-            .configure(stk_backend::routes::categories::configure)
-    ).await;
+    let (app, _) = get_app().await;
 
     let mut new_category_data = get_category_default(1);
     new_category_data.sub_category_of = Some(String::from("no-id"));
