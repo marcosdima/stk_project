@@ -20,7 +20,11 @@ use crate::{
         category_id, sticker_id,
     }
 };
-use super::common::BasicModel;
+use super::{
+    categories::Category,
+    common::BasicModel,
+    Model
+};
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Queryable, Insertable)]
 #[diesel(table_name = sticker_category)]
@@ -38,6 +42,13 @@ impl BasicModel for StickerCategory {
         data: Self::NewT
     ) -> Result<Self, AppError> {
         let new_object = <Self as BasicModel>::new(data);
+
+        // Check if category has subcategories...
+        let category = Category::get_by_id(pool, new_object.category_id.clone())?;
+
+        if !category.last(pool)? {
+            return Err(AppError::InvalidData("Category must have no sub-categories"))
+        } 
 
         diesel::insert_into(sticker_category::table)
             .values(&new_object)
