@@ -23,7 +23,7 @@ use diesel_migrations::{
 };
 use serde::Deserialize;
 use stk_backend::{
-    models::Model,
+    models::BasicModel,
     routes::DbPool,
 };
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
@@ -45,7 +45,7 @@ pub fn run_migrations(conn: &mut SqliteConnection) {
     conn.run_pending_migrations(MIGRATIONS).unwrap();
 }
 
-pub fn create_test_objects<T: Model>(
+pub fn create_test_objects<T: BasicModel>(
     pool: &DbPool,
     n: u16,
     default_data: impl Fn(u16) -> T::NewT,
@@ -62,11 +62,11 @@ pub fn create_test_objects<T: Model>(
     res
 }
 
-pub async fn parse_response<T: Model + for<'a> Deserialize<'a>>(resp: ServiceResponse) -> Vec<T> {
+pub async fn parse_response<T: BasicModel + for<'a> Deserialize<'a>>(resp: ServiceResponse) -> Vec<T> {
     test::read_body_json(resp).await
 }
 
-pub async fn get_element<T: Model>(
+pub async fn get_element<T: BasicModel>(
     app: &impl Service<Request, Response = ServiceResponse, Error = Error>, 
     route: &str,
 ) -> T {
@@ -80,7 +80,7 @@ pub async fn get_element<T: Model>(
     test::read_body_json(resp).await
 }
 
-pub async fn get_elements<T: Model>(
+pub async fn get_elements<T: BasicModel>(
     app: &impl Service<Request, Response = ServiceResponse, Error = Error>, 
     route: &str,
 ) -> Vec<T> {
@@ -94,7 +94,7 @@ pub async fn get_elements<T: Model>(
     parse_response::<T>(resp).await
 }
 
-pub async fn expect_n_elements<T: Model>(
+pub async fn expect_n_elements<T: BasicModel>(
     app: &impl Service<Request, Response = ServiceResponse, Error = Error>, 
     route: &str,
     expected: Vec<T>

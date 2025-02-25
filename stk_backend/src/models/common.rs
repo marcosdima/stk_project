@@ -7,7 +7,7 @@ use serde::Deserialize;
 use crate::errors::AppError;
 use crate::routes::{self, DbPool};
 
-pub trait Model: Debug + PartialEq + for<'a> Deserialize<'a> + BasicModel {
+pub trait Model: BasicModel {
     type UpdateT;
 
     fn get_all(
@@ -30,7 +30,7 @@ pub trait Model: Debug + PartialEq + for<'a> Deserialize<'a> + BasicModel {
     ) -> Result<(), AppError>;
 }
 
-pub trait BasicModel: Sized {
+pub trait BasicModel: Debug + PartialEq + for<'a> Deserialize<'a> + Sized {
     type NewT;
     type PK;
 
