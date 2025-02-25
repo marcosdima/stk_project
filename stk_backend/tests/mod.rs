@@ -6,6 +6,9 @@ mod categories;
 #[cfg(test)]
 mod stickers;
 
+#[cfg(test)]
+mod tags;
+
 pub use actix_web::{
     http::{
         header::ContentType,
@@ -24,11 +27,15 @@ pub use stk_backend::{
         },
         sticker_category::{
             NewStickerCategory,
-            StickerCategory
+            StickerCategory,
         },
         stickers::{
             Sticker,
             StickerUpdate,
+        },
+        tags::{
+            Tag,
+            TagUpdate,
         },
         BasicModel,
         Model
@@ -41,6 +48,7 @@ pub use crate::common::{
         self,
         get_category_default,
         get_sticker_default,
+        get_tag_default,
     },
     get_element,
     get_app
