@@ -22,7 +22,7 @@ use super::common::BasicModel;
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Queryable, Insertable)]
 #[diesel(table_name = tag)]
 pub struct Tag {
-    name: String,
+    pub name: String,
 }
 
 impl Tag { 
