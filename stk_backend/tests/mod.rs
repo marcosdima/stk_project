@@ -37,6 +37,10 @@ pub use stk_backend::{
             Tag,
             TagUpdate,
         },
+        sticker_tag::{
+            StickerTag,
+            NewStickerTag,
+        },
         BasicModel,
         Model
     },

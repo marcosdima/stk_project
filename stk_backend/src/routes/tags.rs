@@ -1,11 +1,8 @@
 use crate::{
     models::{
-        tags::{
-            NewTag,
-            Tag,
-            TagUpdate
-        },
-        BasicModel,
+        sticker_tag::{NewStickerTag, StickerTag}, tags::{
+            DeleteStickerTag, NewTag, Tag, TagUpdate
+        }, BasicModel
     },
     routes::default_match_error
 };
@@ -22,6 +19,18 @@ async fn add_tag(
         Err(e) => default_match_error(e),
     }
 }
+
+#[post("/assign")]
+async fn assign_tag(
+    pool: web::Data<DbPool>,
+    form: web::Json<NewStickerTag>,
+) -> impl Responder {   
+    match StickerTag::create(&pool, form.into_inner()) {
+        Ok(assigned) => HttpResponse::Created().json(assigned),
+        Err(e) => default_match_error(e),
+    }
+}
+
 
 #[get("")]
 async fn get_tags(
@@ -52,6 +61,26 @@ async fn delete_tag(
     }
 }
 
+#[delete("/unassign")]
+async fn unassign_tag(
+    pool: web::Data<DbPool>,
+    form: web::Json<DeleteStickerTag>,
+) -> impl Responder {
+    let data = form.into_inner();
+    match StickerTag::delete(&pool, (data.tag_name, data.sticker_id)) {
+        Ok(rows_deleted) => {
+            if rows_deleted > 0 {
+                HttpResponse::Ok().body("Tag deleted successfully")
+            } else {
+                HttpResponse::NotFound().body("Tag not found")
+            }
+        }
+        Err(e) => default_match_error(e),
+    }
+}
+
+
+
 #[put("/{name}")]
 async fn update_tag(
     pool: web::Data<DbPool>,
@@ -71,5 +100,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .service(add_tag)
             .service(delete_tag)
             .service(update_tag)
+            .service(assign_tag)
+            .service(unassign_tag)
     );
 }

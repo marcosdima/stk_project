@@ -129,3 +129,9 @@ impl TagUpdate {
         TagUpdate { name: new_name }
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeleteStickerTag {
+    pub tag_name: String,
+    pub sticker_id: String,
+}
