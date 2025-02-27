@@ -3,8 +3,6 @@ use diesel::AsChangeset;
 use uuid::Uuid;
 use crate::schema::category;
 
-
-
 #[derive(AsChangeset, Deserialize, Serialize, Debug)]
 #[diesel(table_name = category)]
 pub struct CategoryUpdate {
