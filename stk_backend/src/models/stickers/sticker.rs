@@ -1,14 +1,33 @@
-use serde::{Deserialize, Serialize};
-use diesel::{self, prelude::Insertable, AsChangeset, ExpressionMethods, QueryDsl, Queryable, RunQueryDsl};
-use uuid::Uuid;
-use crate::{
-    errors::AppError,
-    routes::DbPool,
-    schema::sticker,
-    models::common::Model,
+use serde::{
+    Deserialize,
+    Serialize
 };
 
-use super::common::BasicModel;
+use diesel::{
+    self,
+    prelude::Insertable,
+    ExpressionMethods,
+    QueryDsl,
+    Queryable,
+    RunQueryDsl
+};
+
+use uuid::Uuid;
+
+use crate::{
+    errors::AppError,
+    models::{
+        common::Model,
+        BasicModel
+    },
+    routes::DbPool,
+    schema::sticker
+};
+
+use super::{
+    StickerUpdate,
+    NewSticker,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Queryable, Insertable)]
 #[diesel(table_name = sticker)]
@@ -127,37 +146,4 @@ impl BasicModel for Sticker {
         Ok(new_object)
     }
 
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NewSticker {
-    pub label: String,
-    pub url: String,
-}
-
-impl NewSticker {
-    pub fn new(label: String, url: String) -> Self {
-        NewSticker { label, url }
-    }
-}
-
-#[derive(AsChangeset, Deserialize, Serialize)]
-#[diesel(table_name = sticker)]
-pub struct StickerUpdate {
-    pub id: Uuid,
-    pub label: String,
-    pub url: String,
-}
-
-impl StickerUpdate {
-    pub fn new(id: String, label: String, url: String) -> Result<Self, uuid::Error> {
-        let uuid = Uuid::parse_str(&id)?;
-        Ok(
-            StickerUpdate {
-                id: uuid,
-                label,
-                url
-            }
-        )
-    }
 }

@@ -1,10 +1,12 @@
 use diesel::{
     prelude::{
-        AsChangeset, Insertable, Queryable},
-        ExpressionMethods,
-        QueryDsl,
-        RunQueryDsl
-    };
+        Insertable,
+        Queryable
+    },
+    ExpressionMethods,
+    QueryDsl,
+    RunQueryDsl
+};
 
 use serde::{
     Serialize,
@@ -13,11 +15,14 @@ use serde::{
 
 use crate::{
     errors::AppError,
+    models::tags::TagUpdate,
     routes::DbPool,
-    schema::tag,
+    schema::tag
 };
 
-use super::common::BasicModel;
+use crate::models::common::BasicModel;
+
+use super::NewTag;
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Queryable, Insertable)]
 #[diesel(table_name = tag)]
@@ -67,7 +72,6 @@ impl Tag {
     }
 }
 
-
 impl BasicModel for Tag {
     type NewT = NewTag;
     type PK = String;
@@ -105,33 +109,4 @@ impl BasicModel for Tag {
             name: data.name,
         }
     } 
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NewTag {
-    name: String,
-}
-
-impl NewTag {
-    pub fn new(new_name: String) -> Self {
-        NewTag { name: new_name }
-    }
-}
-
-#[derive(AsChangeset, Deserialize, Serialize, Debug)]
-#[diesel(table_name = tag)]
-pub struct TagUpdate {
-    pub name: String,
-}
-
-impl TagUpdate {
-    pub fn new(new_name: String) -> Self {
-        TagUpdate { name: new_name }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DeleteStickerTag {
-    pub tag_name: String,
-    pub sticker_id: String,
 }

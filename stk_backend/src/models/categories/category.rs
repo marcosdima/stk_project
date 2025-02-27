@@ -1,11 +1,35 @@
-use serde::{Deserialize, Serialize};
-use diesel::{
-    self, prelude::Insertable, AsChangeset, ExpressionMethods, QueryDsl, Queryable, RunQueryDsl
+use serde::{
+    Deserialize,
+    Serialize
 };
-use uuid::Uuid;
-use crate::{errors::AppError, routes::DbPool, schema::category};
 
-use super::common::{BasicModel, Model};
+use diesel::{
+    self,
+    prelude::Insertable,
+    ExpressionMethods,
+    QueryDsl,
+    Queryable,
+    RunQueryDsl
+};
+
+use uuid::Uuid;
+
+use crate::{
+    errors::AppError,
+    routes::DbPool,
+    schema::category
+};
+
+use crate::models::{
+    categories::{
+        CategoryUpdate,
+        NewCategory,
+    },
+    common::{
+        BasicModel,
+        Model
+    },
+};
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Queryable, Insertable)]
 #[diesel(table_name = category)]
@@ -178,38 +202,5 @@ impl BasicModel for Category {
         use crate::schema::category::dsl::*;
 
         Ok(diesel::delete(category.filter(id.eq(element_id))).execute(&mut Self::get_conn(pool)?)?)
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NewCategory {
-    pub name: String,
-    pub sub_category_of: Option<String>
-}
-
-impl NewCategory {
-    pub fn new(name: String, sco: Option<String>) -> Self {
-        NewCategory { name, sub_category_of: sco }
-    }
-}
-
-#[derive(AsChangeset, Deserialize, Serialize, Debug)]
-#[diesel(table_name = category)]
-pub struct CategoryUpdate {
-    pub id: Uuid,
-    pub name: String,
-    pub sub_category_of: Option<String>
-}
-
-impl CategoryUpdate {
-    pub fn new(id: String, name: String, sco: Option<String>) -> Result<Self, uuid::Error> {
-        let uuid = Uuid::parse_str(&id)?;
-        Ok(
-            CategoryUpdate {
-                id: uuid,
-                name,
-                sub_category_of: sco
-            }
-        )
     }
 }

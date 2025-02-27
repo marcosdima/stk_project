@@ -1,13 +1,31 @@
 use crate::{
     models::{
-        sticker_tag::{NewStickerTag, StickerTag}, tags::{
-            DeleteStickerTag, NewTag, Tag, TagUpdate
-        }, BasicModel
+        sticker_tag::{
+            DeleteStickerTag,
+            NewStickerTag,
+            StickerTag
+        },
+        tags::{
+            NewTag,
+            Tag,
+            TagUpdate,
+        },
+        BasicModel,
     },
     routes::default_match_error
 };
+
 use crate::routes::DbPool;
-use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
+
+use actix_web::{
+    delete,
+    get,
+    post,
+    put,
+    web,
+    HttpResponse,
+    Responder
+};
 
 #[post("")]
 async fn add_tag(

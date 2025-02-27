@@ -1,16 +1,17 @@
 use diesel::{
     prelude::{
         Insertable,
-        Queryable},
-        ExpressionMethods,
-        QueryDsl,
-        RunQueryDsl
-    };
+        Queryable
+    },
+    ExpressionMethods,
+    QueryDsl,
+    RunQueryDsl
+};
+
 use serde::{
     Serialize,
     Deserialize
 };
-use uuid::Uuid;
 
 use crate::{
     errors::AppError,
@@ -21,7 +22,10 @@ use crate::{
         sticker_id,
     }
 };
-use super::common::BasicModel;
+
+use crate::models::common::BasicModel;
+
+use super::new_sticker_tag::NewStickerTag;
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Queryable, Insertable)]
 #[diesel(table_name = sticker_tag)]
@@ -103,22 +107,5 @@ impl StickerTag {
         let elements = stk_tag_ids.into_iter().map(|sc| sc.sticker_id.clone()).collect();
 
         Ok(elements)
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NewStickerTag {
-    sticker_id: Uuid,
-    tag_name: String,
-}
-
-impl NewStickerTag {
-    pub fn new(stk_id: String, name: String) -> Result<Self, uuid::Error> {
-        let uuid_stk = Uuid::parse_str(&stk_id)?;
-
-        Ok(NewStickerTag {
-            tag_name: name,
-            sticker_id: uuid_stk,
-        })
     }
 }

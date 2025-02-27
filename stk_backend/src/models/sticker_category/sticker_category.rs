@@ -1,16 +1,17 @@
 use diesel::{
     prelude::{
         Insertable,
-        Queryable},
-        ExpressionMethods,
-        QueryDsl,
-        RunQueryDsl
-    };
+        Queryable
+    },
+    ExpressionMethods,
+    QueryDsl,
+    RunQueryDsl
+};
+
 use serde::{
     Serialize,
     Deserialize
 };
-use uuid::Uuid;
 
 use crate::{
     errors::AppError,
@@ -20,11 +21,13 @@ use crate::{
         category_id, sticker_id,
     }
 };
-use super::{
+use crate::models::{
     categories::Category,
     common::BasicModel,
     Model
 };
+
+use super::new_sticker_category::NewStickerCategory;
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Queryable, Insertable)]
 #[diesel(table_name = sticker_category)]
@@ -111,22 +114,5 @@ impl StickerCategory {
         let elements = stk_cat_ids.into_iter().map(|sc| sc.sticker_id.clone()).collect();
 
         Ok(elements)
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NewStickerCategory {
-    sticker_id: Uuid,
-    category_id: Uuid,
-}
-
-impl NewStickerCategory {
-    pub fn new(stk_id: String, cat_id: String) -> Result<Self, uuid::Error> {
-        let uuid_stk = Uuid::parse_str(&stk_id)?;
-        let uuid_cat = Uuid::parse_str(&cat_id)?;
-        Ok(NewStickerCategory {
-            category_id: uuid_cat,
-            sticker_id: uuid_stk,
-        })
     }
 }
