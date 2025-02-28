@@ -1,6 +1,9 @@
 mod common;
 
 #[cfg(test)]
+mod artists;
+
+#[cfg(test)]
 mod categories;
 
 #[cfg(test)]
@@ -41,6 +44,11 @@ pub use stk_backend::{
             StickerTag,
             NewStickerTag,
         },
+        artists:: {
+            ArtistUpdate,
+            Artist,
+            NewArtist,
+        },
         BasicModel,
         Model
     },
@@ -53,6 +61,7 @@ pub use crate::common::{
         get_category_default,
         get_sticker_default,
         get_tag_default,
+        get_artist_default,
     },
     get_element,
     get_app

@@ -112,6 +112,7 @@ pub async fn get_app() -> (impl Service<Request, Response = ServiceResponse, Err
             .configure(stk_backend::routes::stickers::configure)
             .configure(stk_backend::routes::categories::configure)
             .configure(stk_backend::routes::tags::configure)
+            .configure(stk_backend::routes::artists::configure)
     ).await;
 
     (app, pool)

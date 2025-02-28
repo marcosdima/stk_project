@@ -1,6 +1,15 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    artist (id) {
+        id -> Text,
+        name -> Text,
+        logo_url -> Text,
+        presentation -> Nullable<Text>,
+    }
+}
+
+diesel::table! {
     category (id) {
         id -> Text,
         name -> Text,
@@ -42,6 +51,7 @@ diesel::joinable!(sticker_tag -> sticker (sticker_id));
 diesel::joinable!(sticker_tag -> tag (tag_name));
 
 diesel::allow_tables_to_appear_in_same_query!(
+    artist,
     category,
     sticker,
     sticker_category,

@@ -19,6 +19,7 @@ async fn main() -> std::io::Result<()> {
                 .configure(routes::stickers::configure)
                 .configure(routes::categories::configure)
                 .configure(routes::tags::configure)
+                .configure(routes::artists::configure)
         }
     )
     .bind(("127.0.0.1", 8080))?
