@@ -49,32 +49,12 @@ async fn assign_tag(
     }
 }
 
-
 #[get("")]
 async fn get_tags(
     pool: web::Data<DbPool>,
 ) -> impl Responder {
     match Tag::get_all(&pool) {
         Ok(tags) => HttpResponse::Ok().json(tags),
-        Err(e) => default_match_error(e),
-    }
-}
-
-#[delete("/{id}")]
-async fn delete_tag(
-    pool: web::Data<DbPool>,
-    path: web::Path<String>,
-) -> impl Responder {
-    let tag_id = path.into_inner();
-
-    match Tag::delete(&pool, tag_id) {
-        Ok(rows_deleted) => {
-            if rows_deleted > 0 {
-                HttpResponse::Ok().body("Tag deleted successfully")
-            } else {
-                HttpResponse::NotFound().body("Tag not found")
-            }
-        }
         Err(e) => default_match_error(e),
     }
 }
@@ -97,7 +77,24 @@ async fn unassign_tag(
     }
 }
 
+#[delete("/{id}")]
+async fn delete_tag(
+    pool: web::Data<DbPool>,
+    path: web::Path<String>,
+) -> impl Responder {
+    let tag_id = path.into_inner();
 
+    match Tag::delete(&pool, tag_id) {
+        Ok(rows_deleted) => {
+            if rows_deleted > 0 {
+                HttpResponse::Ok().body("Tag deleted successfully")
+            } else {
+                HttpResponse::NotFound().body("Tag not found")
+            }
+        }
+        Err(e) => default_match_error(e),
+    }
+}
 
 #[put("/{name}")]
 async fn update_tag(

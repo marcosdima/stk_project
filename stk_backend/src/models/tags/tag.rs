@@ -15,7 +15,10 @@ use serde::{
 
 use crate::{
     errors::AppError,
-    models::tags::TagUpdate,
+    models::{
+        tags::TagUpdate,
+        Model,
+    },
     routes::DbPool,
     schema::tag
 };
@@ -60,15 +63,71 @@ impl Tag {
         curr_name: &String,
         new_name: String,
     ) -> Result<(), AppError> {
-        use crate::schema::tag::dsl::*;
+        let _ = Tag::get_by_id(&pool, curr_name.to_string())?;
 
         let data = TagUpdate::new(new_name);
 
-        diesel::update(tag.filter(name.eq(&curr_name)))
+        Self::update(&pool, data)?;
+
+        Ok(())
+    }
+}
+
+impl Model for Tag { 
+    type UpdateT = TagUpdate;
+
+    fn get_all(
+        pool: &DbPool
+    ) -> Result<Vec<Self>, AppError> {
+        use crate::schema::tag::dsl::*;
+        let conn = &mut Self::get_conn(pool)?;
+
+        let res = tag.load(conn)?;
+        Ok(res)
+    }
+
+    fn get_by_id(
+        pool: &DbPool,
+        element_id: String,
+    ) -> Result<Self, AppError> {
+        use crate::schema::tag::dsl::*;
+
+        if let Ok(found) = tag
+            .filter(name.eq(element_id))
+            .first::<Self>(&mut Self::get_conn(pool)?)
+            {
+            Ok(found)
+        } else {
+            Err(AppError::NotFound("Sticker with id provided does not exist!"))
+        }
+    }
+
+    fn update(
+        pool: &DbPool,
+        data: Self::UpdateT,
+    ) -> Result<(), AppError> {
+        use crate::schema::tag::dsl::*;
+        // Checks if category exists...
+        let _ = Self::get_by_id(pool, data.name.clone())?;
+
+        diesel::update(tag.filter(name.eq(&data.name)))
             .set(&data)
             .execute(&mut Self::get_conn(pool)?)?;
 
         Ok(())
+    }
+    
+    fn get_in_id_array(
+        pool: &DbPool,
+        elements: Vec<String>
+    ) -> Result<Vec<Self>, AppError> {
+        use crate::schema::tag::dsl::*;
+        
+        let res = tag.filter(
+            name.eq_any(elements)
+        ).load::<Self>(&mut Self::get_conn(pool)?)?;
+
+        Ok(res)
     }
 }
 
