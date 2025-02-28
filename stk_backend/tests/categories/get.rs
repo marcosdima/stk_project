@@ -6,11 +6,7 @@ fn create_categories(pool: &DbPool, n: u16) -> Vec<Category> {
 
 #[actix_web::test]
 async fn test_get_categories_empty() {
-    let app = test::init_service(
-        App::new()
-            .app_data(web::Data::new(common::init_test_db_pool()))
-            .configure(stk_backend::routes::categories::configure)
-    ).await;
+    let (app, _) = get_app().await;
 
     let empty: Vec<Category> = vec![];
     common::expect_n_elements(&app, "/categories", empty).await;
