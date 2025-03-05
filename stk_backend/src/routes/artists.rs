@@ -1,17 +1,31 @@
 use crate::{
     models::{
+        artist_sticker::{
+            ArtistSticker,
+            NewArtistSticker
+        },
         artists::{
-            NewArtist,
             Artist,
-            ArtistUpdate
+            ArtistUpdate,
+            NewArtist
         },
         BasicModel,
         Model
     },
     routes::default_match_error
 };
+
 use crate::routes::DbPool;
-use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
+
+use actix_web::{
+    delete,
+    get,
+    post,
+    put,
+    web,
+    HttpResponse,
+    Responder
+};
 
 #[post("")]
 async fn add_artist(
@@ -20,6 +34,17 @@ async fn add_artist(
 ) -> impl Responder {   
     match Artist::create(&pool, form.into_inner()) {
         Ok(new_artist) => HttpResponse::Created().json(new_artist),
+        Err(e) => default_match_error(e),
+    }
+}
+
+#[post("/sticker")]
+async fn assign_sticker(
+    pool: web::Data<DbPool>,
+    form: web::Json<NewArtistSticker>,
+) -> impl Responder {   
+    match ArtistSticker::create(&pool, form.into_inner()) {
+        Ok(new) => HttpResponse::Created().json(new),
         Err(e) => default_match_error(e),
     }
 }
@@ -76,5 +101,6 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .service(add_artist)
             .service(delete_artist)
             .service(update_artist)
+            .service(assign_sticker)
     );
 }

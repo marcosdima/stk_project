@@ -49,6 +49,7 @@ pub use stk_backend::{
             Artist,
             NewArtist,
         },
+        artist_sticker::*,
         BasicModel,
         Model
     },

@@ -22,19 +22,16 @@ use crate::{
         sticker_id,
     }
 };
-use crate::models::{
-    categories::Category,
-    common::BasicModel,
-    Model
-};
+
+use crate::models::common::BasicModel;
 
 use super::new_artist_sticker::NewArtistSticker;
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Queryable, Insertable)]
 #[diesel(table_name = artist_sticker)]
 pub struct ArtistSticker {
-    artist_id: String,
-    sticker_id: String,
+    pub artist_id: String,
+    pub sticker_id: String,
 }
 
 impl BasicModel for ArtistSticker {
@@ -46,13 +43,6 @@ impl BasicModel for ArtistSticker {
         data: Self::NewT
     ) -> Result<Self, AppError> {
         let new_object = <Self as BasicModel>::new(data);
-
-        // Check if category has subcategories...
-        let category = Category::get_by_id(pool, new_object.artist_id.clone())?;
-
-        if !category.last(pool)? {
-            return Err(AppError::InvalidData("Category must have no sub-categories"))
-        } 
 
         diesel::insert_into(artist_sticker::table)
             .values(&new_object)
@@ -68,13 +58,13 @@ impl BasicModel for ArtistSticker {
         use crate::schema::artist_sticker::dsl::*;
         let conn = &mut Self::get_conn(pool)?;
 
-        let (stk_id, cat_id) = element_id;
+        let (stk_id, arts_id) = element_id;
 
         Ok(
             diesel::delete(
                 artist_sticker
                             .filter(sticker_id.eq(stk_id))
-                            .filter(artist_id.eq(cat_id))
+                            .filter(artist_id.eq(arts_id))
             ).execute(conn)?
         )
     }
