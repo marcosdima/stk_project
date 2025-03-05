@@ -10,6 +10,13 @@ diesel::table! {
 }
 
 diesel::table! {
+    artist_sticker (artist_id, sticker_id) {
+        artist_id -> Text,
+        sticker_id -> Text,
+    }
+}
+
+diesel::table! {
     category (id) {
         id -> Text,
         name -> Text,
@@ -45,6 +52,8 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(artist_sticker -> artist (artist_id));
+diesel::joinable!(artist_sticker -> sticker (sticker_id));
 diesel::joinable!(sticker_category -> category (category_id));
 diesel::joinable!(sticker_category -> sticker (sticker_id));
 diesel::joinable!(sticker_tag -> sticker (sticker_id));
@@ -52,6 +61,7 @@ diesel::joinable!(sticker_tag -> tag (tag_name));
 
 diesel::allow_tables_to_appear_in_same_query!(
     artist,
+    artist_sticker,
     category,
     sticker,
     sticker_category,
