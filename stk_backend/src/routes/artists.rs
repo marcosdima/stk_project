@@ -59,6 +59,23 @@ async fn get_artists(
     }
 }
 
+#[get("/{arts_id}/stickers")]
+async fn get_artist_stickers(
+    pool: web::Data<DbPool>,
+    path: web::Path<String>,
+) -> impl Responder {
+    let id = path.into_inner();
+    match Artist::get_by_id(&pool, id) {
+        Ok(artist) => {
+            match ArtistSticker::artist_stickers(&pool, artist.id) {
+                Ok(artists) => HttpResponse::Ok().json(artists),
+                Err(e) => default_match_error(e),
+            }
+        },
+        Err(e) => default_match_error(e),
+    }
+}
+
 #[delete("/{id}")]
 async fn delete_artist(
     pool: web::Data<DbPool>,
@@ -98,6 +115,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/artists")
             .service(get_artists)
+            .service(get_artist_stickers)
             .service(add_artist)
             .service(delete_artist)
             .service(update_artist)
