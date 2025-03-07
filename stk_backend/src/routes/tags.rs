@@ -11,6 +11,7 @@ use crate::{
             TagUpdate,
         },
         BasicModel,
+        Model,
     },
     routes::default_match_error
 };
@@ -102,10 +103,15 @@ async fn update_tag(
     data: web::Json<TagUpdate>,
     curr_name: web::Path<String>,
 ) -> impl Responder {
-    match Tag::change_name(&pool, &curr_name.into_inner(), data.into_inner().name) {
-        Ok(_) => HttpResponse::Ok().body("Updated successfully"),
+    match Tag::get_by_id(&pool, curr_name.into_inner()) {
+        Ok(_) => {
+            match Tag::change_name(&pool, data.into_inner().name) {
+                Ok(_) => HttpResponse::Ok().body("Updated successfully"),
+                Err(e) => default_match_error(e),
+            }
+        },
         Err(e) => default_match_error(e),
-    }
+    }  
 }
 
 pub fn configure(cfg: &mut web::ServiceConfig) {

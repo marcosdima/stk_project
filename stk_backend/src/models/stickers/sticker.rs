@@ -84,8 +84,6 @@ impl Model for Sticker {
         data: Self::UpdateT,
     ) -> Result<(), AppError> {
         use crate::schema::sticker::dsl::*;
-        // Checks if category exists...
-        let _ = Self::get_by_id(pool, data.id.to_string())?;
 
         diesel::update(sticker.filter(id.eq(&data.id.to_string())))
             .set(&data)

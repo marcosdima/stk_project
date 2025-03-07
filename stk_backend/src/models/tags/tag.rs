@@ -60,11 +60,8 @@ impl Tag {
 
     pub fn change_name(
         pool: &DbPool,
-        curr_name: &String,
         new_name: String,
     ) -> Result<(), AppError> {
-        let _ = Tag::get_by_id(&pool, curr_name.to_string())?;
-
         let data = TagUpdate::new(new_name);
 
         Self::update(&pool, data)?;
@@ -107,8 +104,6 @@ impl Model for Tag {
         data: Self::UpdateT,
     ) -> Result<(), AppError> {
         use crate::schema::tag::dsl::*;
-        // Checks if category exists...
-        let _ = Self::get_by_id(pool, data.name.clone())?;
 
         diesel::update(tag.filter(name.eq(&data.name)))
             .set(&data)

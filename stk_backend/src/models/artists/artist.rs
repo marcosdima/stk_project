@@ -72,8 +72,6 @@ impl Model for Artist {
         data: Self::UpdateT,
     ) -> Result<(), AppError> {
         use crate::schema::artist::dsl::*;
-        // Checks if artist exists...
-        let _ = Self::get_by_id(pool, data.id.clone())?;
 
         diesel::update(artist.filter(id.eq(&data.id.to_string())))
             .set(&data)

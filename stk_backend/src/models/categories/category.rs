@@ -130,8 +130,6 @@ impl Model for Category {
         data: Self::UpdateT,
     ) -> Result<(), AppError> {
         use crate::schema::category::dsl::*;
-        // Checks if category exists...
-        let _ = Self::get_by_id(pool, data.id.to_string())?;
 
         // Checks if is trying to set sub_category_of, then validate it.
         if let Some(sco) = data.sub_category_of.clone() {
