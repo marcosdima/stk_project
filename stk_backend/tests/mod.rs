@@ -12,6 +12,9 @@ mod stickers;
 #[cfg(test)]
 mod tags;
 
+#[cfg(test)]
+mod users;
+
 pub use actix_web::{
     http::{
         header::ContentType,
@@ -24,32 +27,14 @@ pub use actix_web::{
 
 pub use stk_backend::{
     models::{
-        categories::{
-            Category,
-            CategoryUpdate,
-        },
-        sticker_category::{
-            NewStickerCategory,
-            StickerCategory,
-        },
-        stickers::{
-            Sticker,
-            StickerUpdate,
-        },
-        tags::{
-            Tag,
-            TagUpdate,
-        },
-        sticker_tag::{
-            StickerTag,
-            NewStickerTag,
-        },
-        artists:: {
-            ArtistUpdate,
-            Artist,
-            NewArtist,
-        },
+        categories::*,
+        sticker_category::*,
+        stickers::*,
+        tags::*,
+        sticker_tag::*,
+        artists::*,
         artist_sticker::*,
+        users::*,
         BasicModel,
         Model
     },
@@ -63,6 +48,7 @@ pub use crate::common::{
         get_sticker_default,
         get_tag_default,
         get_artist_default,
+        get_user_default,
     },
     get_element,
     get_app

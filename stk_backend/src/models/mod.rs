@@ -5,6 +5,10 @@ pub mod tags;
 pub mod sticker_tag;
 pub mod artists;
 pub mod artist_sticker;
+pub mod users;
 
 mod common;
-pub use common::{Model, BasicModel};
+pub use common::{
+    Model,
+    BasicModel
+};
