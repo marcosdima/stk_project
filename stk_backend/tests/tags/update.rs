@@ -15,7 +15,7 @@ async fn test_change_tag_name() {
     // Updates tag
     let req = test::TestRequest::default()
         .method(Method::PUT)
-        .uri(&format!("/tags/{}", new_tag.name.replace(" ", "%20")))
+        .uri(&format!("/tags/{}", new_tag.id.replace(" ", "%20")))
         .insert_header(ContentType::json())
         .set_payload(serde_json::to_string(&updated_tag_data).unwrap())
         .to_request();

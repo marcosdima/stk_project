@@ -97,13 +97,13 @@ async fn delete_tag(
     }
 }
 
-#[put("/{name}")]
+#[put("/{id}")]
 async fn update_tag(
     pool: web::Data<DbPool>,
     data: web::Json<TagUpdate>,
-    curr_name: web::Path<String>,
+    id: web::Path<String>,
 ) -> impl Responder {
-    match Tag::get_by_id(&pool, curr_name.into_inner()) {
+    match Tag::get_by_id(&pool, id.into_inner()) {
         Ok(_) => {
             match Tag::update(&pool, data.into_inner()) {
                 Ok(_) => HttpResponse::Ok().body("Updated successfully"),

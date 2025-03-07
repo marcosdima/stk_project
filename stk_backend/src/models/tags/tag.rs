@@ -55,7 +55,7 @@ impl Model for Tag {
         use crate::schema::tag::dsl::*;
 
         if let Ok(found) = tag
-            .filter(name.eq(element_id))
+            .filter(id.eq(element_id))
             .first::<Self>(&mut Self::get_conn(pool)?)
             {
             Ok(found)
