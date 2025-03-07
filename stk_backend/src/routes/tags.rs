@@ -105,7 +105,7 @@ async fn update_tag(
 ) -> impl Responder {
     match Tag::get_by_id(&pool, curr_name.into_inner()) {
         Ok(_) => {
-            match Tag::change_name(&pool, data.into_inner().name) {
+            match Tag::update(&pool, data.into_inner()) {
                 Ok(_) => HttpResponse::Ok().body("Updated successfully"),
                 Err(e) => default_match_error(e),
             }

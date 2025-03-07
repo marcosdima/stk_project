@@ -10,11 +10,12 @@ use crate::schema::tag;
 #[derive(AsChangeset, Deserialize, Serialize, Debug)]
 #[diesel(table_name = tag)]
 pub struct TagUpdate {
+    pub id: String,
     pub name: String,
 }
 
 impl TagUpdate {
-    pub fn new(new_name: String) -> Self {
-        TagUpdate { name: new_name }
+    pub fn new(id: String, name: String) -> Self {
+        TagUpdate { id, name }
     }
 }

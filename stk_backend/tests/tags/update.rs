@@ -10,7 +10,7 @@ async fn test_change_tag_name() {
 
     let new_tag = create_tags(&pool, 1).pop().unwrap();
 
-    let updated_tag_data = TagUpdate::new(new_tag.name.clone());
+    let updated_tag_data = TagUpdate::new(new_tag.id.clone(), String::from("Updated Tag"));
 
     // Updates tag
     let req = test::TestRequest::default()
@@ -26,7 +26,7 @@ async fn test_change_tag_name() {
     common::expect_n_elements(
         &app,
         "/tags",
-        vec![Tag { name: updated_tag_data.name }]
+        vec![Tag { id: new_tag.id, name: updated_tag_data.name }]
     ).await;
 }
 
@@ -34,8 +34,8 @@ async fn test_change_tag_name() {
 async fn test_update_tag_not_found() {
     let (app, pool) = get_app().await;
 
-    let _ = create_tags(&pool, 1);
-    let updated_tag_data = TagUpdate::new(String::from("NEW"));
+    let new_tag = create_tags(&pool, 1).first().unwrap().to_owned();
+    let updated_tag_data = TagUpdate::new(new_tag.id, String::from("NEW"));
 
     // Updates tag
     let req = test::TestRequest::default()

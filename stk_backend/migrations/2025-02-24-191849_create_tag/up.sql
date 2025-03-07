@@ -1,4 +1,4 @@
 CREATE TABLE tag (
-    name TEXT NOT NULL CHECK (LENGTH(name) > 1),
-    PRIMARY KEY (name)
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL UNIQUE CHECK (LENGTH(name) > 1)
 );

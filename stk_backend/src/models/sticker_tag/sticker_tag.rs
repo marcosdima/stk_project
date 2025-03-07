@@ -18,7 +18,7 @@ use crate::{
     routes::DbPool,
     schema::sticker_tag::{
         self,
-        tag_name,
+        tag_id,
         sticker_id,
     }
 };
@@ -31,7 +31,7 @@ use super::new_sticker_tag::NewStickerTag;
 #[diesel(table_name = sticker_tag)]
 pub struct StickerTag {
     // The order is important... wierd.
-    tag_name: String,
+    tag_id: String,
     sticker_id: String,
 }
 
@@ -65,7 +65,7 @@ impl BasicModel for StickerTag {
             diesel::delete(
                 sticker_tag
                             .filter(sticker_id.eq(stk_id))
-                            .filter(tag_name.eq(name))
+                            .filter(tag_id.eq(name))
             ).execute(conn)?
         )
     }
@@ -73,7 +73,7 @@ impl BasicModel for StickerTag {
     fn new(data: Self::NewT) -> Self {
         StickerTag {
             sticker_id: data.sticker_id.to_string(),
-            tag_name: data.tag_name,
+            tag_id: data.tag_id,
         }
     } 
 }
@@ -89,7 +89,7 @@ impl StickerTag {
 
         let stk_tag_ids: Vec<StickerTag> = sticker_tag.filter(sticker_id.eq(target)).load(conn)?;
         println!("{:?}", stk_tag_ids);
-        let elements = stk_tag_ids.into_iter().map(|sc| sc.tag_name.clone()).collect();
+        let elements = stk_tag_ids.into_iter().map(|sc| sc.tag_id.clone()).collect();
         
         Ok(elements)
     }
@@ -102,7 +102,7 @@ impl StickerTag {
 
         let conn = &mut Self::get_conn(pool)?;
 
-        let stk_tag_ids: Vec<StickerTag> = sticker_tag.filter(tag_name.eq(target)).load(conn)?;
+        let stk_tag_ids: Vec<StickerTag> = sticker_tag.filter(tag_id.eq(target)).load(conn)?;
         
         let elements = stk_tag_ids.into_iter().map(|sc| sc.sticker_id.clone()).collect();
 

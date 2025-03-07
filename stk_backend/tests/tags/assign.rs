@@ -13,7 +13,7 @@ async fn test_assign_tag() {
     let stk = Sticker::create(&pool, new_sticker_data).unwrap();
 
     // Sets new data models.
-    let new_stk_tag_data = NewStickerTag::new(stk.id.clone(), tag.name.clone()).unwrap();
+    let new_stk_tag_data = NewStickerTag::new(stk.id.clone(), tag.id.clone()).unwrap();
 
     // Assigns a tag.
     let req = test::TestRequest::default()
@@ -26,7 +26,7 @@ async fn test_assign_tag() {
     assert!(resp.status().is_success());
    
     // Check creation.
-    assert_eq!(StickerTag::sticker_tags(&pool, stk.id).unwrap(), vec![tag.name]);
+    assert_eq!(StickerTag::sticker_tags(&pool, stk.id).unwrap(), vec![tag.id]);
 }
 
 #[actix_web::test]
@@ -67,7 +67,7 @@ async fn test_unassign_imaginary_sticker() {
     let tag = Tag::create(&pool, new_tag_data).unwrap();
 
     // Sets new data models.
-    let new_stk_tag_data = NewStickerTag::new(Uuid::new_v4().to_string(), tag.name.clone()).unwrap();
+    let new_stk_tag_data = NewStickerTag::new(Uuid::new_v4().to_string(), tag.id.clone()).unwrap();
 
     // Assigns a tag.
     let req = test::TestRequest::default()
@@ -80,7 +80,7 @@ async fn test_unassign_imaginary_sticker() {
     assert!(resp.status().is_client_error());
    
     // Check creation.
-    assert_eq!(StickerTag::tag_stickers(&pool, tag.name).unwrap(), vec![] as Vec<String>);
+    assert_eq!(StickerTag::tag_stickers(&pool, tag.id).unwrap(), vec![] as Vec<String>);
 }
 
 #[actix_web::test]
@@ -96,12 +96,12 @@ async fn test_unassign_tag() {
     let stk = Sticker::create(&pool, new_sticker_data).unwrap();
 
     // Sets new data models.
-    let new_stk_tag_data = NewStickerTag::new(stk.id.clone(), tag.name.clone()).unwrap();
+    let new_stk_tag_data = NewStickerTag::new(stk.id.clone(), tag.id.clone()).unwrap();
     let _ = StickerTag::create(&pool, new_stk_tag_data).unwrap();
 
     // Unassgin
     let unassign_data = serde_json::json!({
-        "tag_name": tag.name,
+        "tag_id": tag.id,
         "sticker_id": stk.id,
     });
 
