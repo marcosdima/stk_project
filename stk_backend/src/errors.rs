@@ -1,5 +1,11 @@
 use thiserror::Error;
-use diesel::{r2d2::Error as R2R2Error, result::Error as DieselError};
+
+use diesel::{
+    r2d2::Error as R2R2Error,
+    result::Error as DieselError
+};
+
+use argon2::password_hash::Error as PasswordHashError;
 
 #[derive(Debug, Error)]
 pub enum AppError {
@@ -8,6 +14,9 @@ pub enum AppError {
 
     #[error("R2R2 error: {0}")]
     R2R2Error(#[from] R2R2Error),
+
+    #[error("PasswordHass error: {0}")]
+    PasswordHashError(String),
 
     #[error("Element not found")]
     NotFound(&'static str),
@@ -24,7 +33,14 @@ impl AppError {
         match self {
             Self::DieselError(err) => err.to_string(),
             Self::R2R2Error(err) => err.to_string(),
+            Self::PasswordHashError(err) => err.to_string(),
             Self::NotFound(msg) | Self::UnexpectedError(msg) | Self::InvalidData(msg) => msg.to_string(),
         }
+    }
+}
+
+impl From<PasswordHashError> for AppError {
+    fn from(err: PasswordHashError) -> Self {
+        AppError::PasswordHashError(err.to_string())
     }
 }

@@ -15,6 +15,9 @@ mod tags;
 #[cfg(test)]
 mod users;
 
+#[cfg(test)]
+mod utils;
+
 pub use actix_web::{
     http::{
         header::ContentType,
