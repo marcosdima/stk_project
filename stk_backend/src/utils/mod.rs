@@ -1,5 +1,6 @@
 mod password;
 mod token;
+pub mod errors;
 pub mod config;
 
 pub use password::{

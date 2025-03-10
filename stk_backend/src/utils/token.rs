@@ -17,7 +17,10 @@ use jsonwebtoken::{
     Validation,
 };
 
-use crate::{errors::AppError, utils::config};
+use crate::{
+    utils::config,
+    utils::errors::AppError,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
