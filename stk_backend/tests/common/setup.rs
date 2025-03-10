@@ -51,6 +51,8 @@ pub fn run_migrations(conn: &mut SqliteConnection) {
 }
 
 pub async fn get_app() -> (impl Service<Request, Response = ServiceResponse, Error = Error>, Data<DbPool>) {
+    dotenvy::dotenv().ok();
+    
     let pool = web::Data::new(init_test_db_pool());
 
     let app = test::init_service(
