@@ -7,6 +7,8 @@ use diesel::{
 
 use argon2::password_hash::Error as PasswordHashError;
 
+use jsonwebtoken::errors::Error as JSONWebTokenError;
+
 #[derive(Debug, Error)]
 pub enum AppError {
     #[error("Database error: {0}")]
@@ -17,6 +19,9 @@ pub enum AppError {
 
     #[error("PasswordHass error: {0}")]
     PasswordHashError(String),
+
+    #[error("JSONWebTokenError error: {0}")]
+    JSONWebTokenError(#[from] JSONWebTokenError),
 
     #[error("Element not found")]
     NotFound(&'static str),
@@ -34,6 +39,7 @@ impl AppError {
             Self::DieselError(err) => err.to_string(),
             Self::R2R2Error(err) => err.to_string(),
             Self::PasswordHashError(err) => err.to_string(),
+            Self::JSONWebTokenError(err) => err.to_string(),
             Self::NotFound(msg) | Self::UnexpectedError(msg) | Self::InvalidData(msg) => msg.to_string(),
         }
     }
