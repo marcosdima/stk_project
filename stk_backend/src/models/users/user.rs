@@ -54,6 +54,22 @@ impl User {
             password_hash,
         }
     }
+
+    pub fn get_by_username(
+        pool: &DbPool,
+        target: String,
+    ) -> Result<Self, AppError> {
+        use crate::schema::user::dsl::*;
+
+        if let Ok(found) = user
+            .filter(username.eq(target))
+            .first::<Self>(&mut Self::get_conn(pool)?)
+            {
+            Ok(found)
+        } else {
+            Err(AppError::NotFound("User with username provided does not exist!"))
+        }
+    }
 }
 
 impl Model for User { 

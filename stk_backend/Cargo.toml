@@ -13,6 +13,8 @@ serde = { version = "1.0.218", features = ["derive"] }
 uuid = { version = "1.15.1", features = ["v4", "serde"] }
 thiserror = "2.0.12"
 argon2 = "0.5"
+jsonwebtoken = "9"  
+chrono = "0.4" 
 
 [dev-dependencies]
 actix-http="3.9.0"

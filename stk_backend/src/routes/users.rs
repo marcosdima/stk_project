@@ -8,10 +8,13 @@ use crate::{
         BasicModel,
         Model,
     },
-    routes::default_match_error
+    routes::default_match_error, utils::{self, verify_password}
 };
 
-use crate::routes::DbPool;
+use crate::{
+    routes::DbPool,
+    utils::hash_password,
+};
 
 use actix_web::{
     delete,
@@ -23,14 +26,56 @@ use actix_web::{
     Responder
 };
 
+use serde::{
+    Deserialize,
+    Serialize,
+};
+#[derive(Deserialize, Serialize)]
+struct LogIn {
+    username: String,
+    password: String,
+}
+#[post("/login")]
+async fn login(
+    pool: web::Data<DbPool>,
+    form: web::Json<LogIn>,
+) -> impl Responder {
+    let data = form.into_inner();
+
+    // Finds user by its username.
+    match User::get_by_username(&pool, data.username) {
+        Ok(user) => {
+            // Compare password from data with user password_hash.
+            if verify_password(&data.password, &user.password_hash) {
+                // Try to generate a token.
+                match utils::generate_token(&user.id) {
+                    Ok(token) => HttpResponse::Ok().body(token),
+                    Err(e) => default_match_error(e),
+                }
+            } else {
+                HttpResponse::Unauthorized().body("Wrong username-password")
+            }
+        },
+        Err(e) => default_match_error(e),
+    }  
+}
+
 #[post("")]
 async fn add_user(
     pool: web::Data<DbPool>,
     form: web::Json<NewUser>,
-) -> impl Responder {   
-    match User::create(&pool, form.into_inner()) {
-        Ok(new_user) => HttpResponse::Created().json(new_user),
-        Err(e) => default_match_error(e),
+) -> impl Responder {
+    let mut data = form.into_inner();
+
+    match hash_password(&data.password_hash) {
+        Ok(hash) => {
+            data.password_hash = hash;
+            match User::create(&pool, data) {
+                Ok(new_user) => HttpResponse::Created().json(new_user),
+                Err(e) => default_match_error(e),
+            }
+        },
+        Err(e) => default_match_error(e.into()),
     }
 }
 
@@ -86,5 +131,6 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .service(add_user)
             .service(delete_user)
             .service(update_user)
+            .service(login)
     );
 }

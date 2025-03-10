@@ -24,6 +24,7 @@ async fn test_create_user() {
     let body = test::read_body(resp).await;
     let new_user: User = serde_json::from_slice(&body).unwrap();
 
+    assert_ne!(new_user_data.password_hash, new_user.password_hash);
     common::expect_n_elements(&app, "/users", vec![new_user]).await;
 }
 
@@ -37,7 +38,7 @@ async fn test_create_user_invalid_fields() {
         "name": new_user_data.name,
         "lastname": new_user_data.lastname,
         "username": "Another UserName",
-        "password_hash": new_user_data.lastname,
+        "password_hash": new_user_data.password_hash,
     });
     let keys = vec!["name", "lastname", "username"];
 
