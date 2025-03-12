@@ -1,0 +1,5 @@
+CREATE TABLE role (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL CHECK (LENGTH(name) > 1),
+    description TEXT
+);

@@ -1,0 +1,4 @@
+CREATE TABLE permission (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL CHECK (LENGTH(name) > 1)
+);
