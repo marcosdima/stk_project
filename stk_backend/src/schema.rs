@@ -25,6 +25,28 @@ diesel::table! {
 }
 
 diesel::table! {
+    permission (id) {
+        id -> Integer,
+        name -> Text,
+    }
+}
+
+diesel::table! {
+    role (id) {
+        id -> Integer,
+        name -> Text,
+        description -> Text,
+    }
+}
+
+diesel::table! {
+    role_permission (role_id, permission_id) {
+        role_id -> Integer,
+        permission_id -> Integer,
+    }
+}
+
+diesel::table! {
     sticker (id) {
         id -> Text,
         label -> Text,
@@ -63,20 +85,35 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    user_role (user_id, role_id) {
+        user_id -> Text,
+        role_id -> Integer,
+    }
+}
+
 diesel::joinable!(artist_sticker -> artist (artist_id));
 diesel::joinable!(artist_sticker -> sticker (sticker_id));
+diesel::joinable!(role_permission -> permission (permission_id));
+diesel::joinable!(role_permission -> role (role_id));
 diesel::joinable!(sticker_category -> category (category_id));
 diesel::joinable!(sticker_category -> sticker (sticker_id));
 diesel::joinable!(sticker_tag -> sticker (sticker_id));
 diesel::joinable!(sticker_tag -> tag (tag_id));
+diesel::joinable!(user_role -> role (role_id));
+diesel::joinable!(user_role -> user (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     artist,
     artist_sticker,
     category,
+    permission,
+    role,
+    role_permission,
     sticker,
     sticker_category,
     sticker_tag,
     tag,
     user,
+    user_role,
 );
