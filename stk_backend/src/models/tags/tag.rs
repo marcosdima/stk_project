@@ -84,7 +84,7 @@ impl Model for Tag {
         use crate::schema::tag::dsl::*;
         
         let res = tag.filter(
-            name.eq_any(elements)
+            id.eq_any(elements)
         ).load::<Self>(&mut Self::get_conn(pool)?)?;
 
         Ok(res)
@@ -118,7 +118,7 @@ impl BasicModel for Tag {
         Ok(
             diesel::delete(
                 tag
-                            .filter(name.eq(element_id))
+                    .filter(id.eq(element_id))
             ).execute(conn)?
         )
     }
