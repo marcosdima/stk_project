@@ -7,6 +7,7 @@ pub mod artists;
 pub mod artist_sticker;
 pub mod users;
 pub mod user_role;
+pub mod security;
 
 mod common;
 pub use common::{
