@@ -6,6 +6,7 @@ pub mod sticker_tag;
 pub mod artists;
 pub mod artist_sticker;
 pub mod users;
+pub mod user_role;
 
 mod common;
 pub use common::{
