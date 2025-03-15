@@ -1,4 +1,8 @@
-use actix_web::HttpResponse;
+use actix_web::{
+    HttpResponse,
+    ResponseError,
+};
+
 use diesel::{
     r2d2::{
         self,
@@ -50,6 +54,6 @@ pub fn default_match_error(
         AppError::NotFound(err) => HttpResponse::NotFound().body(format!("{err}")),
         AppError::DieselError(err) => HttpResponse::BadRequest().body(format!("{err}")),
         AppError::JSONWebTokenError(err) => HttpResponse::BadRequest().body(format!("{err}")),
-        _ => HttpResponse::InternalServerError().finish(),
+        _ => err.error_response(),
     }
 }
