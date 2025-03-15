@@ -1,15 +1,15 @@
 use actix_web::{
     dev::{
         Service,
-        ServiceResponse
+        ServiceResponse,
     },
     test,
     web::{
         self,
-        Data
+        Data,
     },
     App,
-    Error
+    Error,
 };
 
 use diesel::{
@@ -33,7 +33,7 @@ use actix_http::Request;
 
 const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
 
-pub fn init_test_db_pool() -> DbPool {
+fn init_test_db_pool() -> DbPool {
     let conn_spec = ":memory:";
     let manager = ConnectionManager::<SqliteConnection>::new(conn_spec);
     let pool = r2d2::Pool::builder()
@@ -46,7 +46,7 @@ pub fn init_test_db_pool() -> DbPool {
     pool
 }
 
-pub fn run_migrations(conn: &mut SqliteConnection) {
+fn run_migrations(conn: &mut SqliteConnection) {
     conn.run_pending_migrations(MIGRATIONS).unwrap();
 }
 
@@ -67,3 +67,14 @@ pub async fn get_app() -> (impl Service<Request, Response = ServiceResponse, Err
 
     (app, pool)
 }
+
+pub async fn get_just_app() -> impl Service<Request, Response = ServiceResponse, Error = Error> {
+    let (app, _) = get_app().await;
+    app
+}
+
+pub async fn get_just_pool() -> Data<DbPool> {
+    let (_, pool) = get_app().await;
+    pool
+}
+
