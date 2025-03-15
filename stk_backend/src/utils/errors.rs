@@ -5,6 +5,13 @@ use diesel::{
     result::Error as DieselError
 };
 
+use actix_web::{
+    Error as ActixWebError,
+    ResponseError,
+    HttpResponse,
+    http::StatusCode
+};
+
 use argon2::password_hash::Error as PasswordHashError;
 
 use jsonwebtoken::errors::Error as JSONWebTokenError;
@@ -23,6 +30,9 @@ pub enum AppError {
     #[error("JSONWebTokenError error: {0}")]
     JSONWebTokenError(#[from] JSONWebTokenError),
 
+    #[error("ActixWebError error: {0}")]
+    ActixWebError(#[from] ActixWebError),
+
     #[error("Element not found")]
     NotFound(&'static str),
 
@@ -31,16 +41,22 @@ pub enum AppError {
 
     #[error("Data provided can not be used")]
     InvalidData(&'static str),
+
+    #[error("Token provided is not valid")]
+    InvalidToken,
+
+    #[error("User does not have permissions needed")]
+    Forbidden,
 }
 
 impl AppError {
     pub fn message(&self) -> String {
         match self {
-            Self::DieselError(err) => err.to_string(),
-            Self::R2R2Error(err) => err.to_string(),
-            Self::PasswordHashError(err) => err.to_string(),
-            Self::JSONWebTokenError(err) => err.to_string(),
-            Self::NotFound(msg) | Self::UnexpectedError(msg) | Self::InvalidData(msg) => msg.to_string(),
+            Self::NotFound(msg) |
+            Self::UnexpectedError(msg) |
+            Self::InvalidData(msg)
+                => msg.to_string(),
+            _ => format!("{}", self),
         }
     }
 }
@@ -48,5 +64,21 @@ impl AppError {
 impl From<PasswordHashError> for AppError {
     fn from(err: PasswordHashError) -> Self {
         AppError::PasswordHashError(err.to_string())
+    }
+}
+
+impl ResponseError for AppError {
+    fn error_response(&self) -> HttpResponse {
+        HttpResponse::build(self.status_code()).body(self.message())
+    }
+
+    fn status_code(&self) -> StatusCode {
+        match self {
+            AppError::NotFound(_) => StatusCode::NOT_FOUND,
+            AppError::InvalidData(_) => StatusCode::BAD_REQUEST,
+            AppError::InvalidToken => StatusCode::UNAUTHORIZED,
+            AppError::Forbidden => StatusCode::FORBIDDEN,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
+        }
     }
 }
