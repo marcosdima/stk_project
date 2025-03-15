@@ -138,7 +138,6 @@ pub async fn restrict_assign_role(
     req: ServiceRequest,
     next: Next<BoxBody>,
 ) -> Result<ServiceResponse<BoxBody>, Error> {
-    println!("ASsifgn");
     match validate_permission(&req, PermissionNeeded::AssignRole) {
         Ok(_) => next.call(req).await,
         Err(e) => {
