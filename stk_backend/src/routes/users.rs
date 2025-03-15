@@ -8,7 +8,12 @@ use crate::{
         BasicModel,
         Model,
     },
-    routes::default_match_error, utils::{self, verify_password}
+    routes::default_match_error,
+    utils::{
+        self,
+        middleware::restrict_delete,
+        verify_password,
+    },
 };
 
 use crate::{
@@ -17,19 +22,20 @@ use crate::{
 };
 
 use actix_web::{
-    delete,
     get,
+    middleware::from_fn,
     post,
     put,
     web,
     HttpResponse,
-    Responder
+    Responder,
 };
 
 use serde::{
     Deserialize,
     Serialize,
 };
+
 #[derive(Deserialize, Serialize)]
 struct LogIn {
     username: String,
@@ -79,31 +85,13 @@ async fn add_user(
     }
 }
 
+
 #[get("")]
 async fn get_users(
     pool: web::Data<DbPool>,
 ) -> impl Responder {
     match User::get_all(&pool) {
         Ok(users) => HttpResponse::Ok().json(users),
-        Err(e) => default_match_error(e),
-    }
-}
-
-#[delete("/{id}")]
-async fn delete_user(
-    pool: web::Data<DbPool>,
-    path: web::Path<String>,
-) -> impl Responder {
-    let user_id = path.into_inner();
-
-    match User::delete(&pool, user_id) {
-        Ok(rows_deleted) => {
-            if rows_deleted > 0 {
-                HttpResponse::Ok().body("User deleted successfully")
-            } else {
-                HttpResponse::NotFound().body("User not found")
-            }
-        }
         Err(e) => default_match_error(e),
     }
 }
@@ -124,13 +112,35 @@ async fn update_user(
     }  
 }
 
+async fn delete_user(
+    pool: web::Data<DbPool>,
+    path: web::Path<String>,
+) -> impl Responder {
+    let user_id = path.into_inner();
+
+    match User::delete(&pool, user_id) {
+        Ok(rows_deleted) => {
+            if rows_deleted > 0 {
+                HttpResponse::Ok().body("User deleted successfully")
+            } else {
+                HttpResponse::NotFound().body("User not found")
+            }
+        }
+        Err(e) => default_match_error(e),
+    }
+}
+
 pub fn configure(cfg: &mut web::ServiceConfig) {
+    let delete = web::resource("/{id}")
+        .wrap(from_fn(restrict_delete))
+        .route(web::delete().to(delete_user));
+
     cfg.service(
         web::scope("/users")
             .service(get_users)
             .service(add_user)
-            .service(delete_user)
             .service(update_user)
             .service(login)
+            .service(delete) 
     );
 }

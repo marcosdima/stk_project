@@ -1,5 +1,6 @@
 mod password;
 mod token;
+pub mod middleware;
 pub mod errors;
 pub mod config;
 
