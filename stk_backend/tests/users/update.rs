@@ -23,34 +23,36 @@ async fn test_update_user() {
     );
 
     // Updates user
-    let req = test::TestRequest::default()
-        .method(Method::PUT)
-        .uri("/users")
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&updated_user_data).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+    
+    let resp = basic_request(
+        &app,
+        "/users",
+        Method::PUT,
+        headers,
+        serde_json::to_string(&updated_user_data).unwrap()
+    ).await;
     
     assert!(resp.status().is_success());
 
-    common::expect_n_elements(
-        &app,
-        "/users",
-        vec![
-            User {
-                id: updated_user_data.id.to_string(),
-                name: new_name.to_owned(),
-                lastname: new_lastname.to_owned(),
-                username: new_username.to_owned(),
-                password_hash: new_pass.to_owned(),
-            }
-        ]
-    ).await;
+    assert_eq!(
+        User {
+            id: updated_user_data.id.to_string(),
+            name: new_name.to_owned(),
+            lastname: new_lastname.to_owned(),
+            username: new_username.to_owned(),
+            password_hash: new_pass.to_owned(),
+        },
+        User::get_by_username(&pool, new_username.to_owned()).unwrap(),
+    );
 }
 
 #[actix_web::test]
 async fn test_update_user_not_found() {
-    let (app, _) = get_app().await;
+    let (app, pool) = get_app().await;
 
     let new_name = "NEW name";
     let new_lastname = "NEW lastname";
@@ -66,13 +68,19 @@ async fn test_update_user_not_found() {
     );
 
     // Updates user
-    let req = test::TestRequest::default()
-        .method(Method::PUT)
-        .uri("/users")
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&updated_user_data).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+    
+    let resp = basic_request(
+        &app,
+        "/users",
+        Method::PUT,
+        headers,
+        serde_json::to_string(&updated_user_data).unwrap(),
+    ).await;
+
     assert!(resp.status().is_client_error());
 }
 
@@ -95,18 +103,23 @@ async fn test_update_user_wrong_id() {
     });
 
     // Updates user
-    let req = test::TestRequest::default()
-        .method(Method::PUT)
-        .uri("/users")
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&updated_user_data).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
-    assert!(resp.status().is_client_error());
-
-    common::expect_n_elements(
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+    
+    let resp = basic_request(
         &app,
         "/users",
-        vec![new_user]
+        Method::PUT,
+        headers,
+        serde_json::to_string(&updated_user_data).unwrap()
     ).await;
+
+    assert!(resp.status().is_client_error());
+
+    assert_eq!(
+        new_user,
+        User::get_by_username(&pool, new_user.username.clone()).unwrap(),
+    );
 }
