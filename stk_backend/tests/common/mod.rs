@@ -1,9 +1,15 @@
 mod setup;
+pub mod admin;
 pub mod default;
-
-pub use setup::get_app;
+pub mod requests;
 
 use actix_http::Request;
+
+pub use setup::{
+    get_app,
+    get_just_app,
+    get_just_pool,
+};
 
 use actix_web::{
     dev::{
@@ -12,12 +18,13 @@ use actix_web::{
     },
     http::header::ContentType,
     test,
-    Error
+    Error,
 };
 
 use serde::Deserialize;
 
 use stk_backend::{
+    errors::AppError,
     models::BasicModel,
     routes::DbPool,
 };
@@ -41,6 +48,13 @@ pub fn create_test_objects<T: BasicModel>(
 
 pub async fn parse_response<T: BasicModel + for<'a> Deserialize<'a>>(resp: ServiceResponse) -> Vec<T> {
     test::read_body_json(resp).await
+}
+
+pub async fn expect_error(
+    err: AppError,
+    resp: ServiceResponse,
+) {
+    assert_eq!(err.message(), test::read_body(resp).await)
 }
 
 pub async fn get_element<T: BasicModel>(
@@ -79,4 +93,3 @@ pub async fn expect_n_elements<T: BasicModel>(
     let categories = get_elements(app, route).await;
     assert_eq!(expected, categories);
 }
-
