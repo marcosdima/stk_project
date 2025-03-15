@@ -47,6 +47,9 @@ pub enum AppError {
 
     #[error("User does not have permissions needed")]
     Forbidden,
+
+    #[error("User has no role")]
+    RoleNeeded,
 }
 
 impl AppError {
@@ -78,6 +81,7 @@ impl ResponseError for AppError {
             AppError::InvalidData(_) => StatusCode::BAD_REQUEST,
             AppError::InvalidToken => StatusCode::UNAUTHORIZED,
             AppError::Forbidden => StatusCode::FORBIDDEN,
+            AppError::RoleNeeded => StatusCode::UNAUTHORIZED,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
