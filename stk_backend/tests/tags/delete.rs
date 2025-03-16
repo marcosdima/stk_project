@@ -9,7 +9,7 @@ async fn test_delete_tag() {
     let (app, pool) = get_app().await;
 
     // Gets id from a new tag. (Default data has spaces, so it has to be replaced to %20)
-    let created = create_tags(&pool, 1).pop().unwrap().name.replace(" ", "%20");
+    let created = create_tags(&pool, 1).pop().unwrap().id.replace(" ", "%20");
 
     // Should return a succes message.
     let req = test::TestRequest::default()
