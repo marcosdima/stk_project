@@ -88,7 +88,7 @@ impl StickerTag {
         let conn = &mut Self::get_conn(pool)?;
 
         let stk_tag_ids: Vec<StickerTag> = sticker_tag.filter(sticker_id.eq(target)).load(conn)?;
-        println!("{:?}", stk_tag_ids);
+
         let elements = stk_tag_ids.into_iter().map(|sc| sc.tag_id.clone()).collect();
         
         Ok(elements)

@@ -97,7 +97,7 @@ async fn test_login_wrong_credentials() {
         .set_payload(serde_json::to_string(&credentials).unwrap())
         .to_request();
     let resp = test::call_service(&app, req).await;
-    println!("{:?}", resp);
+
     assert!(resp.status().is_client_error());
 }
 

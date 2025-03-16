@@ -16,8 +16,6 @@ async fn test_generate_token() {
     // Get claim from token.
     let claim = validate_token(&token).unwrap();    
 
-    println!("{token}");
-
     assert_eq!(user_id, claim.sub);
 }
 

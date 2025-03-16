@@ -89,7 +89,7 @@ async fn test_assign_category_wrong_id() {
         .set_payload(serde_json::to_string(&new_stk_cat_data_uuid).unwrap())
         .to_request();
     let resp = test::call_service(&app, req).await;
-    println!("{:?}", resp);
+
     assert!(resp.status().is_client_error());
 }
 

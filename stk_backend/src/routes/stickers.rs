@@ -41,7 +41,7 @@ async fn get_sticker_categories(
     path: web::Path<String>,
 ) -> impl Responder {
     let sticker_id = path.into_inner();
-    println!("ID: {:?}", sticker_id);
+
     match StickerCategory::sticker_categories(&pool, sticker_id) {
         Ok(ids) => HttpResponse::Ok().json(ids),
         Err(e) => default_match_error(e),
