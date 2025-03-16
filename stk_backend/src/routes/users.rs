@@ -1,5 +1,9 @@
 use crate::{
     models::{
+        user_role::{
+            NewUserRole,
+            UserRole,
+        },
         users::{
             NewUser,
             User,
@@ -11,7 +15,10 @@ use crate::{
     routes::default_match_error,
     utils::{
         self,
-        middleware::restrict_delete,
+        middleware::{
+            restrict_assign_role,
+            restrict_delete,
+        },
         verify_password,
     },
 };
@@ -130,7 +137,29 @@ async fn delete_user(
     }
 }
 
+async fn assign_role(
+    pool: web::Data<DbPool>,
+    form: web::Json<NewUserRole>,
+) -> impl Responder {
+    let data = form.into_inner();
+
+    // Finds user by its username.
+    match User::get_by_id(&pool, data.user_id.clone()) {
+        Ok(_) => {
+            match UserRole::create(&pool, data) {
+                Ok(_) => HttpResponse::Ok().body("Role assigned"),
+                Err(e) => default_match_error(e),
+            }
+        },
+        Err(e) => default_match_error(e),
+    }
+}
+
 pub fn configure(cfg: &mut web::ServiceConfig) {
+    let assign = web::resource("/role")
+        .wrap(from_fn(restrict_assign_role))
+        .route(web::post().to(assign_role));
+
     let delete = web::resource("/{id}")
         .wrap(from_fn(restrict_delete))
         .route(web::delete().to(delete_user));
@@ -141,6 +170,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .service(add_user)
             .service(update_user)
             .service(login)
+            .service(assign)
             .service(delete) 
     );
 }
