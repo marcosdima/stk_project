@@ -15,10 +15,7 @@ use crate::{
     routes::default_match_error,
     utils::{
         self,
-        middleware::{
-            restrict_assign_role,
-            restrict_delete,
-        },
+        resource,
         verify_password,
     },
 };
@@ -30,7 +27,6 @@ use crate::{
 
 use actix_web::{
     get,
-    middleware::from_fn,
     post,
     put,
     web,
@@ -156,13 +152,8 @@ async fn assign_role(
 }
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
-    let assign = web::resource("/role")
-        .wrap(from_fn(restrict_assign_role))
-        .route(web::post().to(assign_role));
-
-    let delete = web::resource("/{id}")
-        .wrap(from_fn(restrict_delete))
-        .route(web::delete().to(delete_user));
+    let assign = resource::assign("/role", assign_role);
+    let delete = resource::delete("/{id}", delete_user);
 
     cfg.service(
         web::scope("/users")
