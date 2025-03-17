@@ -60,7 +60,7 @@ impl Model for Tag {
             {
             Ok(found)
         } else {
-            Err(AppError::NotFound("Sticker with id provided does not exist!"))
+            Err(AppError::NotFound("Tag with id provided does not exist!"))
         }
     }
 
