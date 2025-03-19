@@ -62,3 +62,17 @@ where
         .wrap(from_fn(restrict_assign_role)) 
         .route(web::post().to(handler))
 }
+
+pub fn unassign<H, R>(
+    path: &str,
+    handler: H
+) -> impl HttpServiceFactory 
+where
+    H: actix_web::Handler<R> + Clone + 'static,
+    R: 'static + actix_web::FromRequest,
+    <H as actix_web::Handler<R>>::Output: Responder,
+{
+    web::resource(path)
+        .wrap(from_fn(restrict_assign_role)) 
+        .route(web::delete().to(handler))
+}

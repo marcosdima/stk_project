@@ -56,7 +56,7 @@ pub use crate::common::{
         self,
         *
     },
-    admin::*,
+    user_tokens::*,
     requests::*,
     get_element,
     get_app,

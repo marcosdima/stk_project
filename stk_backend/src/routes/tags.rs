@@ -13,42 +13,21 @@ use crate::{
         BasicModel,
         Model,
     },
-    routes::default_match_error
+    routes::default_match_error,
+    utils::{
+        resource,
+        errors::AppError,
+    },
 };
 
 use crate::routes::DbPool;
 
 use actix_web::{
-    delete,
     get,
-    post,
-    put,
     web,
     HttpResponse,
-    Responder
+    Responder,
 };
-
-#[post("")]
-async fn add_tag(
-    pool: web::Data<DbPool>,
-    form: web::Json<NewTag>,
-) -> impl Responder {   
-    match Tag::create(&pool, form.into_inner()) {
-        Ok(new_tag) => HttpResponse::Created().json(new_tag),
-        Err(e) => default_match_error(e),
-    }
-}
-
-#[post("/assign")]
-async fn assign_tag(
-    pool: web::Data<DbPool>,
-    form: web::Json<NewStickerTag>,
-) -> impl Responder {   
-    match StickerTag::create(&pool, form.into_inner()) {
-        Ok(assigned) => HttpResponse::Created().json(assigned),
-        Err(e) => default_match_error(e),
-    }
-}
 
 #[get("")]
 async fn get_tags(
@@ -60,25 +39,33 @@ async fn get_tags(
     }
 }
 
-#[delete("/unassign")]
-async fn unassign_tag(
+async fn create_tag(
     pool: web::Data<DbPool>,
-    form: web::Json<DeleteStickerTag>,
-) -> impl Responder {
-    let data = form.into_inner();
-    match StickerTag::delete(&pool, (data.tag_name, data.sticker_id)) {
-        Ok(rows_deleted) => {
-            if rows_deleted > 0 {
-                HttpResponse::Ok().body("Tag deleted successfully")
-            } else {
-                HttpResponse::NotFound().body("Tag not found")
-            }
-        }
+    form: web::Json<NewTag>,
+) -> impl Responder {   
+    match Tag::create(&pool, form.into_inner()) {
+        Ok(new_tag) => HttpResponse::Created().json(new_tag),
         Err(e) => default_match_error(e),
     }
 }
 
-#[delete("/{id}")]
+async fn assign_tag(
+    pool: web::Data<DbPool>,
+    form: web::Json<NewStickerTag>,
+) -> impl Responder {
+    let data = form.into_inner();
+
+    match Tag::get_by_id(&pool, data.tag_id.clone()) {
+        Ok(_) => {
+            match StickerTag::create(&pool, data) {
+                Ok(assigned) => HttpResponse::Created().json(assigned),
+                Err(e) => default_match_error(e),
+            }
+        },
+        Err(e) => default_match_error(e),
+    }
+}
+
 async fn delete_tag(
     pool: web::Data<DbPool>,
     path: web::Path<String>,
@@ -90,14 +77,30 @@ async fn delete_tag(
             if rows_deleted > 0 {
                 HttpResponse::Ok().body("Tag deleted successfully")
             } else {
-                HttpResponse::NotFound().body("Tag not found")
+                default_match_error(AppError::NotFound("Tag not found"))
             }
         }
         Err(e) => default_match_error(e),
     }
 }
 
-#[put("/{id}")]
+async fn unassign_tag(
+    pool: web::Data<DbPool>,
+    form: web::Json<DeleteStickerTag>,
+) -> impl Responder {
+    let data = form.into_inner();
+    match StickerTag::delete(&pool, (data.tag_id, data.sticker_id)) {
+        Ok(rows_deleted) => {
+            if rows_deleted > 0 {
+                HttpResponse::Ok().body("Tag deleted successfully")
+            } else {
+                HttpResponse::NotFound().body("Sticker-Tag not found")
+            }
+        }
+        Err(e) => default_match_error(e),
+    }
+}
+
 async fn update_tag(
     pool: web::Data<DbPool>,
     data: web::Json<TagUpdate>,
@@ -115,13 +118,24 @@ async fn update_tag(
 }
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
+    let create = resource::post("", create_tag);
+    let assign = resource::assign("/assign", assign_tag);
+    
+    let unassign = resource::unassign("/unassign", unassign_tag);
+
+    // TODO: This did not work when both were just '/{id}'.
+    let delete = resource::delete("/delete", delete_tag);
+    let update = resource::update("/update", update_tag);
+    let scope = web::scope("/{id}")
+        .service(delete)
+        .service(update);
+
     cfg.service(
         web::scope("/tags")
             .service(get_tags)
-            .service(add_tag)
-            .service(delete_tag)
-            .service(update_tag)
-            .service(assign_tag)
-            .service(unassign_tag)
+            .service(create)
+            .service(unassign)
+            .service(assign)
+            .service(scope)
     );
 }

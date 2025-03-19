@@ -8,16 +8,21 @@ fn create_tags(pool: &DbPool, n: u16) -> Vec<Tag> {
 async fn test_delete_tag() {
     let (app, pool) = get_app().await;
 
-    // Gets id from a new tag. (Default data has spaces, so it has to be replaced to %20)
-    let created = create_tags(&pool, 1).pop().unwrap().id.replace(" ", "%20");
+    let created = create_tags(&pool, 1).pop().unwrap().id;
 
-    // Should return a succes message.
-    let req = test::TestRequest::default()
-        .method(Method::DELETE)
-        .uri(&format!("/tags/{created}"))
-        .insert_header(ContentType::plaintext())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+    
+    let resp = basic_request(
+        &app,
+        &format!("/tags/{created}/delete"),
+        Method::DELETE,
+        headers,
+        "",
+    ).await;
+
     assert!(resp.status().is_success());
     let body = test::read_body(resp).await;
     assert_eq!(body, "Tag deleted successfully");
@@ -29,16 +34,83 @@ async fn test_delete_tag() {
 
 #[actix_web::test]
 async fn test_delete_tags_not_found() {
-    let (app, _) = get_app().await;
+    let (app, pool) = get_app().await;
 
-    // Should return a succes message.
-    let req = test::TestRequest::default()
-        .method(Method::DELETE)
-        .uri(&format!("/tags/id-not-found"))
-        .insert_header(ContentType::plaintext())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+
+    let resp = basic_request(
+        &app,
+        "/tags/id-not-found/delete",
+        Method::DELETE,
+        headers,
+        "",
+    ).await;
+
     assert!(resp.status().is_client_error());
-    let body = test::read_body(resp).await;
-    assert_eq!(body, "Tag not found");
+    expect_error(AppError::NotFound("Tag not found"), resp).await;
+
+    // With UUID...
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+
+    let resp = basic_request(
+        &app,
+        &format!("/tags/{}/delete", Uuid::new_v4()),
+        Method::DELETE,
+        headers,
+        "",
+    ).await;
+
+    assert!(resp.status().is_client_error());
+    expect_error(AppError::NotFound("Tag not found"), resp).await;
+}
+
+#[actix_web::test]
+async fn test_delete_tag_but_no_role() {
+    let (app, pool) = get_app().await;
+
+    let created = create_tags(&pool, 1).pop().unwrap().id;
+
+    let headers = vec![
+        get_random_token_header(&pool),
+        get_json_header(),
+    ];
+    
+    let resp = basic_request(
+        &app,
+        &format!("/tags/{created}/delete"),
+        Method::DELETE,
+        headers,
+        "",
+    ).await;
+
+    assert!(resp.status().is_client_error());
+    expect_error(AppError::RoleNeeded, resp).await;
+}
+
+#[actix_web::test]
+async fn test_delete_tag_but_no_token() {
+    let (app, pool) = get_app().await;
+
+    let created = create_tags(&pool, 1).pop().unwrap().id;
+
+    let headers = vec![
+        get_json_header(),
+    ];
+    
+    let resp = basic_request(
+        &app,
+        &format!("/tags/{created}/delete"),
+        Method::DELETE,
+        headers,
+        "",
+    ).await;
+
+    assert!(resp.status().is_client_error());
+    expect_error(AppError::InvalidToken, resp).await;
 }

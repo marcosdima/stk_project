@@ -5,6 +5,6 @@ use serde::{
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeleteStickerTag {
-    pub tag_name: String,
+    pub tag_id: String,
     pub sticker_id: String,
 }

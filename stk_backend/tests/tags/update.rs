@@ -8,25 +8,30 @@ fn create_tags(pool: &DbPool, n: u16) -> Vec<Tag> {
 async fn test_change_tag_name() {
     let (app, pool) = get_app().await;
 
-    let new_tag = create_tags(&pool, 1).pop().unwrap();
+    let new_tag_id = create_tags(&pool, 1).pop().unwrap().id;
 
-    let updated_tag_data = TagUpdate::new(new_tag.id.clone(), String::from("Updated Tag"));
+    let updated_tag_data = TagUpdate::new(new_tag_id.clone(), String::from("Updated Tag"));
 
     // Updates tag
-    let req = test::TestRequest::default()
-        .method(Method::PUT)
-        .uri(&format!("/tags/{}", new_tag.id.replace(" ", "%20")))
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&updated_tag_data).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+
+    let resp = basic_request(
+        &app,
+        &format!("/tags/{new_tag_id}/update"),
+        Method::PUT,
+        headers,
+        serde_json::to_string(&updated_tag_data).unwrap(),
+    ).await;
 
     assert!(resp.status().is_success());
 
     common::expect_n_elements(
         &app,
         "/tags",
-        vec![Tag { id: new_tag.id, name: updated_tag_data.name }]
+        vec![Tag { id: new_tag_id, name: updated_tag_data.name }]
     ).await;
 }
 
@@ -38,40 +43,64 @@ async fn test_update_tag_not_found() {
     let updated_tag_data = TagUpdate::new(new_tag.id, String::from("NEW"));
 
     // Updates tag
-    let req = test::TestRequest::default()
-        .method(Method::PUT)
-        .uri("/tags/NOEXISTS")
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&updated_tag_data).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+
+    let resp = basic_request(
+        &app,
+        &format!("/tags/{}/update", Uuid::new_v4()),
+        Method::PUT,
+        headers,
+        serde_json::to_string(&updated_tag_data).unwrap(),
+    ).await;
 
     assert!(resp.status().is_client_error());
+    expect_error(AppError::NotFound("Tag with id provided does not exist!"), resp).await;
 }
 
 #[actix_web::test]
-async fn test_update_tag_wrong_id() {
+async fn test_update_tag_but_no_role() {
     let (app, pool) = get_app().await;
 
-    let new_tag = create_tags(&pool, 1).pop().unwrap();
+    let created = create_tags(&pool, 1).pop().unwrap().id;
 
-    let updated_tag_data = serde_json::json!({
-        "name": "",
-    });
-
-    // Updates tag
-    let req = test::TestRequest::default()
-        .method(Method::PUT)
-        .uri("/tags")
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&updated_tag_data).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
-    assert!(resp.status().is_client_error());
-
-    common::expect_n_elements(
+    let headers = vec![
+        get_random_token_header(&pool),
+        get_json_header(),
+    ];
+    
+    let resp = basic_request(
         &app,
-        "/tags",
-        vec![new_tag]
+        &format!("/tags/{created}/update"),
+        Method::DELETE,
+        headers,
+        "",
     ).await;
+
+    assert!(resp.status().is_client_error());
+    expect_error(AppError::RoleNeeded, resp).await;
+}
+
+#[actix_web::test]
+async fn test_update_tag_but_no_token() {
+    let (app, pool) = get_app().await;
+
+    let created = create_tags(&pool, 1).pop().unwrap().id;
+
+    let headers = vec![
+        get_json_header(),
+    ];
+    
+    let resp = basic_request(
+        &app,
+        &format!("/tags/{created}/update"),
+        Method::DELETE,
+        headers,
+        "",
+    ).await;
+
+    assert!(resp.status().is_client_error());
+    expect_error(AppError::InvalidToken, resp).await;
 }

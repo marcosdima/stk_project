@@ -1,5 +1,5 @@
 mod setup;
-pub mod admin;
+pub mod user_tokens;
 pub mod default;
 pub mod requests;
 
