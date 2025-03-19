@@ -13,6 +13,8 @@ use stk_backend::{
 
 use crate::get_user_default;
 
+use super::create_test_objects;
+
 fn create_admin_user(pool: &DbPool) -> String {
     // Create admin user and set their role.
     match User::get_by_username(pool, "Administrator".to_owned()) {
@@ -30,7 +32,20 @@ fn create_admin_user(pool: &DbPool) -> String {
     }
 }
 
+fn create_random_user(pool: &DbPool) -> String {
+    create_test_objects::<User>(&pool, 1, get_user_default)
+        .first()
+        .unwrap()
+        .to_owned()
+        .id
+}
+
 pub fn get_admin_token(pool: &DbPool) -> String {
     let user_id = &create_admin_user(pool);
+    generate_token(user_id).expect("Test Error: token generation")
+}
+
+pub fn get_random_user_token(pool: &DbPool) -> String {
+    let user_id = &create_random_user(pool);
     generate_token(user_id).expect("Test Error: token generation")
 }

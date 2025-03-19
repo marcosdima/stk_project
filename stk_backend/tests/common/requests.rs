@@ -22,7 +22,10 @@ use stk_backend::routes::DbPool;
 
 use actix_http::Request;
 
-use crate::get_admin_token;
+use crate::{
+    get_admin_token,
+    get_random_user_token,
+};
 
 pub async fn basic_request(
     app: &impl Service<Request, Response = ServiceResponse, Error = Error>,
@@ -51,6 +54,10 @@ pub fn get_admin_token_header(pool: &DbPool) -> (HeaderName, HeaderValue) {
     get_token_header(get_admin_token(pool))
 }
 
+pub fn get_random_token_header(pool: &DbPool) -> (HeaderName, HeaderValue) {
+    get_token_header(get_random_user_token(pool))
+}
+
 pub fn get_token_header(token: String) -> (HeaderName, HeaderValue) {
     (
         AUTHORIZATION,
@@ -58,7 +65,6 @@ pub fn get_token_header(token: String) -> (HeaderName, HeaderValue) {
             .expect("Test Error: Header Value parse error"),
     )
 }
-
 
 pub fn get_json_header() -> (HeaderName, HeaderValue) {
     (
