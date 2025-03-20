@@ -3,21 +3,17 @@ use serde::{
     Deserialize,
 };
 
-use uuid::Uuid;
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NewStickerCategory {
-    pub sticker_id: Uuid,
-    pub category_id: Uuid,
+    pub sticker_id: String,
+    pub category_id: String,
 }
 
 impl NewStickerCategory {
-    pub fn new(stk_id: String, cat_id: String) -> Result<Self, uuid::Error> {
-        let uuid_stk = Uuid::parse_str(&stk_id)?;
-        let uuid_cat = Uuid::parse_str(&cat_id)?;
-        Ok(NewStickerCategory {
-            category_id: uuid_cat,
-            sticker_id: uuid_stk,
-        })
+    pub fn new(stk_id: String, cat_id: String) -> Self {
+       NewStickerCategory {
+            category_id: cat_id,
+            sticker_id: stk_id,
+        }
     }
 }

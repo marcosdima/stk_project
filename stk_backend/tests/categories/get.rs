@@ -42,7 +42,7 @@ async fn test_get_category_stickers() {
     let stk = Sticker::create(&pool, new_sticker_data).unwrap();
 
     // Sets new data models.
-    let new_stk_cat_data = NewStickerCategory::new(stk.id.clone(), cat.id.clone()).unwrap();
+    let new_stk_cat_data = NewStickerCategory::new(stk.id.clone(), cat.id.clone());
 
     // Assigns a category.
     let req = test::TestRequest::default()
