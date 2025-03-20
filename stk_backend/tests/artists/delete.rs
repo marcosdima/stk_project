@@ -11,14 +11,18 @@ async fn test_delete_artists() {
     // Gets id from a new artist.
     let created = create_artists(&pool, 1).pop().unwrap().id;
 
-    // Should return a succes message.
-    let req = test::TestRequest::default()
-        .method(Method::DELETE)
-        .uri(&format!("/artists/{created}"))
-        .insert_header(ContentType::plaintext())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
-    assert!(resp.status().is_success());
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_plain_text_header(),
+    ];
+    
+    let resp = basic_request(
+        &app,
+        &format!("/artists/{created}/delete"),
+        Method::DELETE,
+        headers,
+        "",
+    ).await;
     let body = test::read_body(resp).await;
     assert_eq!(body, "Artist deleted successfully");
 
@@ -29,17 +33,20 @@ async fn test_delete_artists() {
 
 #[actix_web::test]
 async fn test_delete_artists_not_found() {
-    let (app, _) = get_app().await;
+    let (app, pool) = get_app().await;
 
-    // Should return a succes message.
-    let req = test::TestRequest::default()
-        .method(Method::DELETE)
-        .uri(&format!("/artists/id-not-found"))
-        .insert_header(ContentType::plaintext())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_plain_text_header(),
+    ];
+    
+    let resp = basic_request(
+        &app,
+        "/artists/id-not-found/delete",
+        Method::DELETE,
+        headers,
+        "",
+    ).await;
     assert!(resp.status().is_client_error());
-    let body = test::read_body(resp).await;
-    assert_eq!(body, "Artist not found");
-
+    expect_error(AppError::NotFound("Artist not found"), resp).await;
 }

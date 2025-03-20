@@ -1,34 +1,29 @@
 use crate::{
-    models::{
+    errors::AppError, models::{
         artist_sticker::{
             ArtistSticker,
-            NewArtistSticker
-        },
-        artists::{
+            GetArtistSticker,
+            NewArtistSticker,
+        }, artists::{
             Artist,
             ArtistUpdate,
-            NewArtist
-        },
-        BasicModel,
-        Model
+            NewArtist,
+        }, stickers::Sticker, BasicModel, Model
     },
-    routes::default_match_error
+    routes::default_match_error,
+    utils::resource,
 };
 
 use crate::routes::DbPool;
 
 use actix_web::{
-    delete,
     get,
-    post,
-    put,
     web,
     HttpResponse,
-    Responder
+    Responder,
 };
 
-#[post("")]
-async fn add_artist(
+async fn create_artist(
     pool: web::Data<DbPool>,
     form: web::Json<NewArtist>,
 ) -> impl Responder {   
@@ -38,13 +33,38 @@ async fn add_artist(
     }
 }
 
-#[post("/sticker")]
 async fn assign_sticker(
     pool: web::Data<DbPool>,
     form: web::Json<NewArtistSticker>,
+) -> impl Responder {
+    let data = form.into_inner();
+    match Artist::get_by_id(&pool, data.artist_id.clone()) {
+        Ok(_)=> {
+            match Sticker::get_by_id(&pool, data.sticker_id.clone()) {
+                Ok(_) => {
+                    match ArtistSticker::create(&pool, data) {
+                        Ok(new) => HttpResponse::Created().json(new),
+                        Err(e) => default_match_error(e),
+                    }
+                },
+                Err(e) => default_match_error(e),
+            }
+        },
+        Err(e) => default_match_error(e),
+    }
+}
+
+async fn unassign_sticker(
+    pool: web::Data<DbPool>,
+    form: web::Json<GetArtistSticker>,
 ) -> impl Responder {   
-    match ArtistSticker::create(&pool, form.into_inner()) {
-        Ok(new) => HttpResponse::Created().json(new),
+    match ArtistSticker::get(&pool, form.into_inner()) {
+        Ok(found) => {
+            match ArtistSticker::delete(&pool, (found.sticker_id, found.artist_id)) {
+                Ok(_) => HttpResponse::Ok().body("Deleted successfully"),
+                Err(e) => default_match_error(e),
+            }
+        },
         Err(e) => default_match_error(e),
     }
 }
@@ -76,7 +96,6 @@ async fn get_artist_stickers(
     }
 }
 
-#[delete("/{id}")]
 async fn delete_artist(
     pool: web::Data<DbPool>,
     path: web::Path<String>,
@@ -88,14 +107,13 @@ async fn delete_artist(
             if rows_deleted > 0 {
                 HttpResponse::Ok().body("Artist deleted successfully")
             } else {
-                HttpResponse::NotFound().body("Artist not found")
+                default_match_error(AppError::NotFound("Artist not found"))
             }
         }
         Err(e) => default_match_error(e),
     }
 }
 
-#[put("")]
 async fn update_artist(
     pool: web::Data<DbPool>,
     data: web::Json<ArtistUpdate>,
@@ -112,13 +130,22 @@ async fn update_artist(
 }
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
+    let create = resource::post("", create_artist);
+    let assign = resource::post("/sticker/assign", assign_sticker);
+    
+    let unassign = resource::delete("/sticker/unassign", unassign_sticker);
+
+    let delete = resource::delete("/{id}/delete", delete_artist);
+    let update = resource::update("/update", update_artist);
+    
     cfg.service(
         web::scope("/artists")
             .service(get_artists)
             .service(get_artist_stickers)
-            .service(add_artist)
-            .service(delete_artist)
-            .service(update_artist)
-            .service(assign_sticker)
+            .service(create)
+            .service(assign)
+            .service(delete)
+            .service(update)
+            .service(unassign)
     );
 }

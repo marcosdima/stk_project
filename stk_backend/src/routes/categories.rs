@@ -4,29 +4,25 @@ use crate::{
             Category,
             CategoryUpdate,
             NewCategory,
-        }, 
-        sticker_category::{
+        }, sticker_category::{
+            GetStickerCategory,
             NewStickerCategory,
             StickerCategory,
-        },
-        BasicModel,
-        Model
+        }, stickers::Sticker, BasicModel, Model
     },
     routes::default_match_error,
+    utils::resource,
 };
 use crate::routes::DbPool;
+
 use actix_web::{
-    delete,
     get,
-    post,
-    put,
     web,
     HttpResponse,
-    Responder
+    Responder,
 };
 
-#[post("")]
-async fn add_category(
+async fn create_category(
     pool: web::Data<DbPool>,
     form: web::Json<NewCategory>,
 ) -> impl Responder { 
@@ -36,13 +32,38 @@ async fn add_category(
     }
 }
 
-#[post("/assign")]
 async fn assign_category(
     pool: web::Data<DbPool>,
     form: web::Json<NewStickerCategory>,
 ) -> impl Responder {
-    match StickerCategory::create(&pool, form.into_inner()) {
-        Ok(new_obj) => HttpResponse::Created().json(new_obj),
+    let data = form.into_inner();
+    match Category::get_by_id(&pool, data.category_id.clone()) {
+        Ok(_)=> {
+            match Sticker::get_by_id(&pool, data.sticker_id.clone()) {
+                Ok(_) => {
+                    match StickerCategory::create(&pool, data) {
+                        Ok(new_obj) => HttpResponse::Created().json(new_obj),
+                        Err(e) => default_match_error(e),
+                    }
+                },
+                Err(e) => default_match_error(e),
+            }
+        },
+        Err(e) => default_match_error(e),
+    }
+}
+
+async fn unassign_sticker(
+    pool: web::Data<DbPool>,
+    form: web::Json<GetStickerCategory>,
+) -> impl Responder {   
+    match StickerCategory::get(&pool, form.into_inner()) {
+        Ok(found) => {
+            match StickerCategory::delete(&pool, (found.sticker_id, found.category_id)) {
+                Ok(_) => HttpResponse::Ok().body("Deleted successfully"),
+                Err(e) => default_match_error(e),
+            }
+        },
         Err(e) => default_match_error(e),
     }
 }
@@ -70,7 +91,6 @@ async fn get_category(
     }
 }
 
-
 #[get("/{id}/stickers")]
 async fn get_stickers(
     pool: web::Data<DbPool>,
@@ -84,7 +104,6 @@ async fn get_stickers(
     }
 }
 
-#[delete("/{id}")]
 async fn delete_category(
     pool: web::Data<DbPool>,
     path: web::Path<String>,
@@ -103,7 +122,6 @@ async fn delete_category(
     }
 }
 
-#[put("")]
 async fn update_category(
     pool: web::Data<DbPool>,
     data: web::Json<CategoryUpdate>,
@@ -120,14 +138,23 @@ async fn update_category(
 }
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
+    let create = resource::post("", create_category);
+    let assign = resource::post("/sticker/assign", assign_category);
+    
+    let unassign = resource::delete("/sticker/unassign", unassign_sticker);
+
+    let delete = resource::delete("/{id}", delete_category);
+    let update = resource::update("/update", update_category);
+
     cfg.service(
         web::scope("/categories")
             .service(get_categories)
             .service(get_category)
-            .service(add_category)
-            .service(delete_category)
-            .service(update_category)
-            .service(assign_category)
             .service(get_stickers)
+            .service(create)
+            .service(update)
+            .service(assign)
+            .service(unassign)
+            .service(delete)
     );
 }

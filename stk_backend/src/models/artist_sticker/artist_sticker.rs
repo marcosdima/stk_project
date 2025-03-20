@@ -1,16 +1,16 @@
 use diesel::{
     prelude::{
         Insertable,
-        Queryable
+        Queryable,
     },
     ExpressionMethods,
     QueryDsl,
-    RunQueryDsl
+    RunQueryDsl,
 };
 
 use serde::{
     Serialize,
-    Deserialize
+    Deserialize,
 };
 
 use crate::{
@@ -20,12 +20,15 @@ use crate::{
         self,
         artist_id,
         sticker_id,
-    }
+    },
 };
 
 use crate::models::common::BasicModel;
 
-use super::new_artist_sticker::NewArtistSticker;
+use super::{
+    new_artist_sticker::NewArtistSticker,
+    GetArtistSticker,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Queryable, Insertable)]
 #[diesel(table_name = artist_sticker)]
@@ -105,5 +108,22 @@ impl ArtistSticker {
         let elements = arts_stk_ids.into_iter().map(|sc| sc.sticker_id.clone()).collect();
 
         Ok(elements)
+    }
+
+    pub fn get(
+        pool: &DbPool,
+        target: GetArtistSticker,
+    ) -> Result<Self, AppError> {
+        use crate::schema::artist_sticker::dsl::*;
+
+        if let Ok(found) = artist_sticker
+            .filter(sticker_id.eq(target.sticker_id))
+            .filter(artist_id.eq(target.artist_id))
+            .first::<Self>(&mut Self::get_conn(pool)?)
+            {
+            Ok(found)
+        } else {
+            Err(AppError::NotFound("Artist-Sticker with id provided does not exist!"))
+        }
     }
 }

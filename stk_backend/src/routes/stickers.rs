@@ -9,13 +9,20 @@ use crate::{
         BasicModel,
         Model
     },
-    routes::default_match_error
+    routes::default_match_error,
+    utils::resource,
 };
-use crate::routes::DbPool;
-use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 
-#[post("")]
-async fn add_sticker(
+use crate::routes::DbPool;
+
+use actix_web::{
+    get,
+    web,
+    HttpResponse,
+    Responder,
+};
+
+async fn create_sticker(
     pool: web::Data<DbPool>,
     form: web::Json<NewSticker>,
 ) -> impl Responder {   
@@ -48,7 +55,6 @@ async fn get_sticker_categories(
     }
 }
 
-#[delete("/{id}")]
 async fn delete_sticker(
     pool: web::Data<DbPool>,
     path: web::Path<String>,
@@ -67,7 +73,6 @@ async fn delete_sticker(
     }
 }
 
-#[put("")]
 async fn update_sticker(
     pool: web::Data<DbPool>,
     data: web::Json<StickerUpdate>,
@@ -84,12 +89,16 @@ async fn update_sticker(
 }
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
+    let create = resource::post("", create_sticker);
+    let delete = resource::delete("/{id}/delete", delete_sticker);
+    let update = resource::update("/update", update_sticker);
+
     cfg.service(
         web::scope("/stickers")
             .service(get_stickers)
-            .service(add_sticker)
-            .service(delete_sticker)
-            .service(update_sticker)
             .service(get_sticker_categories)
+            .service(delete)
+            .service(update)
+            .service(create)
     );
 }

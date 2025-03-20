@@ -12,12 +12,18 @@ async fn test_delete_categories() {
     let created = create_categories(&pool, 1).pop().unwrap().id;
 
     // Should return a succes message.
-    let req = test::TestRequest::default()
-        .method(Method::DELETE)
-        .uri(&format!("/categories/{created}"))
-        .insert_header(ContentType::plaintext())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_plain_text_header(),
+    ];
+    let resp = basic_request(
+        &app,
+        &format!("/categories/{created}"),
+        Method::DELETE,
+        headers,
+        "",
+    ).await;
+
     assert!(resp.status().is_success());
     let body = test::read_body(resp).await;
     assert_eq!(body, "Category deleted successfully");
@@ -29,19 +35,23 @@ async fn test_delete_categories() {
 
 #[actix_web::test]
 async fn test_delete_categories_not_found() {
-    let (app, _) = get_app().await;
+    let (app, pool) = get_app().await;
 
     // Should return a succes message.
-    let req = test::TestRequest::default()
-        .method(Method::DELETE)
-        .uri(&format!("/categories/id-not-found"))
-        .insert_header(ContentType::plaintext())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
-    assert!(resp.status().is_client_error());
-    let body = test::read_body(resp).await;
-    assert_eq!(body, "Category not found");
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_plain_text_header(),
+    ];
+    let resp = basic_request(
+        &app,
+        "/categories/id-not-found",
+        Method::DELETE,
+        headers,
+        "",
+    ).await;
 
+    assert!(resp.status().is_client_error());
+    expect_error(AppError::NotFound("Category not found"), resp).await;
 }
 
 #[actix_web::test]

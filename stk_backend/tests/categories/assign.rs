@@ -13,16 +13,22 @@ async fn test_assign_category() {
     let stk = Sticker::create(&pool, new_sticker_data).unwrap();
 
     // Sets new data models.
-    let new_stk_cat_data = NewStickerCategory::new(stk.id.clone(), cat.id.clone()).unwrap();
+    let new_stk_cat_data = NewStickerCategory::new(stk.id.clone(), cat.id.clone());
 
     // Assigns a category.
-    let req = test::TestRequest::default()
-        .method(Method::POST)
-        .uri(&format!("/categories/assign"))
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&new_stk_cat_data).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+    
+    let resp = basic_request(
+        &app,
+        "/categories/sticker/assign",
+        Method::POST,
+        headers,
+        serde_json::to_string(&new_stk_cat_data).unwrap(),
+    ).await;
+
     assert!(resp.status().is_success());
 
     // Prepare comparation sets.
@@ -62,35 +68,43 @@ async fn test_assign_category_wrong_id() {
     });
 
     // Tries to assing.
-    let req = test::TestRequest::default()
-        .method(Method::POST)
-        .uri(&format!("/categories/assign"))
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&new_stk_cat_data).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
+    let admin_token = get_admin_token_header(&pool);
+    let json_header = get_json_header();
+
+    let headers = vec![admin_token.clone(), json_header.clone()];
+    let resp = basic_request(
+        &app,
+        "/categories/sticker/assign",
+        Method::POST,
+        headers,
+        serde_json::to_string(&new_stk_cat_data).unwrap(),
+    ).await;
     assert!(resp.status().is_client_error());
+    expect_error(AppError::NotFound("Sticker with id provided does not exist!"), resp).await;
 
     // Tries again.
-    let req = test::TestRequest::default()
-        .method(Method::POST)
-        .uri(&format!("/categories/assign"))
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&new_stk_cat_data2).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
+    let headers = vec![admin_token.clone(), json_header.clone()];
+    let resp = basic_request(
+        &app,
+        "/categories/sticker/assign",
+        Method::POST,
+        headers,
+        serde_json::to_string(&new_stk_cat_data2).unwrap(),
+    ).await;
     assert!(resp.status().is_client_error());
+    expect_error(AppError::NotFound("Category with id provided does not exist!"), resp).await;
 
     // Tries again.
-    let req = test::TestRequest::default()
-        .method(Method::POST)
-        .uri(&format!("/categories/assign"))
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&new_stk_cat_data_uuid).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
-
+    let headers = vec![admin_token, json_header];
+    let resp = basic_request(
+        &app,
+        "/categories/sticker/assign",
+        Method::POST,
+        headers,
+        serde_json::to_string(&new_stk_cat_data_uuid).unwrap(),
+    ).await;
     assert!(resp.status().is_client_error());
+    expect_error(AppError::NotFound("Category with id provided does not exist!"), resp).await;
 }
 
 #[actix_web::test]
@@ -106,29 +120,33 @@ async fn test_assign_category_twice() {
     let stk = Sticker::create(&pool, new_sticker_data).unwrap();
 
     // Sets new data models.
-    let new_stk_cat_data = NewStickerCategory::new(stk.id.clone(), cat.id.clone()).unwrap();
+    let new_stk_cat_data = NewStickerCategory::new(stk.id.clone(), cat.id.clone());
 
-    // Creates a category.
-    let req = test::TestRequest::default()
-        .method(Method::POST)
-        .uri(&format!("/categories/assign"))
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&new_stk_cat_data).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
+    let admin_token = get_admin_token_header(&pool);
+    let json_header = get_json_header();
+
+    let headers = vec![admin_token.clone(), json_header.clone()];
+    let resp = basic_request(
+        &app,
+        "/categories/sticker/assign",
+        Method::POST,
+        headers,
+        serde_json::to_string(&new_stk_cat_data).unwrap(),
+    ).await;
     assert!(resp.status().is_success());
 
-    let new_stk_cat_data = NewStickerCategory::new(stk.id, cat.id).unwrap();
+    let new_stk_cat_data = NewStickerCategory::new(stk.id, cat.id);
 
     // Tries again, with the same data.
-    let req = test::TestRequest::default()
-        .method(Method::POST)
-        .uri(&format!("/categories/assign"))
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&new_stk_cat_data).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
-    assert!(resp.status().is_client_error());
+    let headers = vec![admin_token, json_header];
+    let resp = basic_request(
+        &app,
+        "/categories/sticker/assign",
+        Method::POST,
+        headers,
+        serde_json::to_string(&new_stk_cat_data).unwrap(),
+    ).await;
+    assert!(resp.status().is_client_error()); // TODO: UNIQUE constraint failed.
 }
 
 #[actix_web::test]
@@ -146,18 +164,125 @@ async fn test_assign_category_with_sub_category() {
     let stk = Sticker::create(&pool, new_sticker_data).unwrap();
 
     // Sets SickerCategory between 'stk' and 'cat'.
-    let new_stk_cat_data = NewStickerCategory::new(stk.id.clone(), cat.id.clone()).unwrap();
+    let new_stk_cat_data = NewStickerCategory::new(stk.id.clone(), cat.id.clone());
 
     // Sets 'cat2' as subcategory of 'cat'.
     let _ = Category::update(&pool, CategoryUpdate::new(cat2.id, cat2.name, Some(cat.id.clone())).unwrap());
 
-    // Creates a category.
-    let req = test::TestRequest::default()
-        .method(Method::POST)
-        .uri(&format!("/categories/assign"))
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&new_stk_cat_data).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+    let resp = basic_request(
+        &app,
+        "/categories/sticker/assign",
+        Method::POST,
+        headers,
+        serde_json::to_string(&new_stk_cat_data).unwrap(),
+    ).await;
+    expect_error(AppError::InvalidData("Category must have no sub-categories"), resp).await;
+}
+
+#[actix_web::test]
+async fn test_unassign_sticker() {
+    let (app, pool) = get_app().await;
+
+    let new_category_data = get_category_default(1);
+    let new_sticker_data = get_sticker_default(1);
+
+    let stk_id: String = Sticker::create(&pool, new_sticker_data).unwrap().id;
+    let arts_id = Category::create(&pool, new_category_data).unwrap().id;
+
+    let data = NewStickerCategory::new(stk_id.clone(), arts_id.clone());
+    let _ = StickerCategory::create(&pool, data);
+    let target = GetStickerCategory {
+        category_id: arts_id.clone(),
+        sticker_id: stk_id.clone(),
+    };
+
+    // Creates a category-sticker.
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+    
+    let resp = basic_request(
+        &app,
+        "/categories/sticker/unassign",
+        Method::DELETE,
+        headers,
+        serde_json::to_string(&target).unwrap(),
+    ).await;
+
+    assert!(resp.status().is_success());
+}
+
+#[actix_web::test]
+async fn test_unassign_sticker_stk_not_found() {
+    let (app, pool) = get_app().await;
+
+    let new_category_data = get_category_default(1);
+    let new_sticker_data = get_sticker_default(1);
+
+    let stk_id: String = Sticker::create(&pool, new_sticker_data).unwrap().id;
+    let arts_id = Category::create(&pool, new_category_data).unwrap().id;
+
+    let data = NewStickerCategory::new(stk_id.clone(), arts_id.clone());
+    let _ = StickerCategory::create(&pool, data);
+    let target = GetStickerCategory {
+        sticker_id: stk_id.clone(),
+        category_id: Uuid::new_v4().to_string(),
+    };
+
+    // Creates a category-sticker.
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+    
+    let resp = basic_request(
+        &app,
+        "/categories/sticker/unassign",
+        Method::DELETE,
+        headers,
+        serde_json::to_string(&target).unwrap(),
+    ).await;
+
     assert!(resp.status().is_client_error());
+    expect_error(AppError::NotFound("Sticker-Category with id provided does not exist!"), resp).await;
+}
+
+#[actix_web::test]
+async fn test_unassign_sticker_arts_not_found() {
+    let (app, pool) = get_app().await;
+
+    let new_category_data = get_category_default(1);
+    let new_sticker_data = get_sticker_default(1);
+
+    let stk_id: String = Sticker::create(&pool, new_sticker_data).unwrap().id;
+    let arts_id = Category::create(&pool, new_category_data).unwrap().id;
+
+    let data = NewStickerCategory::new(stk_id.clone(), arts_id.clone());
+    let _ = StickerCategory::create(&pool, data);
+    let target = GetStickerCategory {
+        category_id: arts_id.clone(),
+        sticker_id: Uuid::new_v4().to_string(),
+    };
+
+    // Creates a category-sticker.
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+    
+    let resp = basic_request(
+        &app,
+        "/categories/sticker/unassign",
+        Method::DELETE,
+        headers,
+        serde_json::to_string(&target).unwrap(),
+    ).await;
+
+    assert!(resp.status().is_client_error());
+    expect_error(AppError::NotFound("Sticker-Category with id provided does not exist!"), resp).await;
 }

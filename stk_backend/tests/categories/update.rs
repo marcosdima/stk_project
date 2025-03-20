@@ -45,15 +45,20 @@ async fn test_update_category_circular_error() {
         Some(first.id.to_string()),
     ).unwrap();
 
-    let req = test::TestRequest::default()
-        .method(Method::PUT)
-        .uri("/categories")
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&updated_category_data).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+    let resp = basic_request(
+        &app,
+        "/categories/update",
+        Method::PUT,
+        headers,
+        serde_json::to_string(&updated_category_data).unwrap(),
+    ).await;
 
     assert!(resp.status().is_client_error());
+    expect_error(AppError::InvalidData("Circular relation is prohibited."), resp).await;
 }
 
 #[actix_web::test]
@@ -70,13 +75,18 @@ async fn test_update_category() {
     ).unwrap();
 
     // Updates category
-    let req = test::TestRequest::default()
-        .method(Method::PUT)
-        .uri("/categories")
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&updated_category_data).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+    let resp = basic_request(
+        &app,
+        "/categories/update",
+        Method::PUT,
+        headers,
+        serde_json::to_string(&updated_category_data).unwrap(),
+    ).await;
+
     assert!(resp.status().is_success());
 
     common::expect_n_elements(

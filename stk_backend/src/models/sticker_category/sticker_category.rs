@@ -27,13 +27,13 @@ use crate::models::{
     Model
 };
 
-use super::new_sticker_category::NewStickerCategory;
+use super::{new_sticker_category::NewStickerCategory, GetStickerCategory};
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Queryable, Insertable)]
 #[diesel(table_name = sticker_category)]
 pub struct StickerCategory {
-    sticker_id: String,
-    category_id: String,
+    pub sticker_id: String,
+    pub category_id: String,
 }
 
 impl BasicModel for StickerCategory {
@@ -114,5 +114,22 @@ impl StickerCategory {
         let elements = stk_cat_ids.into_iter().map(|sc| sc.sticker_id.clone()).collect();
 
         Ok(elements)
+    }
+
+    pub fn get(
+        pool: &DbPool,
+        target: GetStickerCategory,
+    ) -> Result<Self, AppError> {
+        use crate::schema::sticker_category::dsl::*;
+
+        if let Ok(found) = sticker_category
+            .filter(sticker_id.eq(target.sticker_id))
+            .filter(category_id.eq(target.category_id))
+            .first::<Self>(&mut Self::get_conn(pool)?)
+            {
+            Ok(found)
+        } else {
+            Err(AppError::NotFound("Sticker-Category with id provided does not exist!"))
+        }
     }
 }

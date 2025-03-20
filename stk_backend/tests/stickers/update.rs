@@ -16,17 +16,21 @@ async fn test_update_sticker() {
         new_sticker.id.clone(),
         String::from(new_label),
         String::from(new_url)
-    ).unwrap();
+    );
 
     // Updates sticker
-    let req = test::TestRequest::default()
-        .method(Method::PUT)
-        .uri("/stickers")
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&updated_sticker_data).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
-
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+    let resp = basic_request(
+        &app,
+        "/stickers/update",
+        Method::PUT,
+        headers,
+        serde_json::to_string(&updated_sticker_data).unwrap(),
+    ).await;
+    
     assert!(resp.status().is_success());
 
     common::expect_n_elements(
@@ -44,23 +48,29 @@ async fn test_update_sticker() {
 
 #[actix_web::test]
 async fn test_update_sticker_not_found() {
-    let (app, _) = get_app().await;
+    let (app, pool) = get_app().await;
 
     let updated_sticker_data = StickerUpdate::new(
         Uuid::new_v4().to_string(),
         String::from("NEW"),
         String::from("www.updated-url.com")
-    ).unwrap();
+    );
 
     // Updates sticker
-    let req = test::TestRequest::default()
-        .method(Method::PUT)
-        .uri("/stickers")
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&updated_sticker_data).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+    let resp = basic_request(
+        &app,
+        "/stickers/update",
+        Method::PUT,
+        headers,
+        serde_json::to_string(&updated_sticker_data).unwrap(),
+    ).await;
+
     assert!(resp.status().is_client_error());
+    expect_error(AppError::NotFound("Sticker with id provided does not exist!"), resp).await;
 }
 
 #[actix_web::test]
@@ -78,14 +88,20 @@ async fn test_update_sticker_wrong_id() {
     });
 
     // Updates sticker
-    let req = test::TestRequest::default()
-        .method(Method::PUT)
-        .uri("/stickers")
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&updated_sticker_data).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+    let resp = basic_request(
+        &app,
+        "/stickers/update",
+        Method::PUT,
+        headers,
+        serde_json::to_string(&updated_sticker_data).unwrap(),
+    ).await;
+
     assert!(resp.status().is_client_error());
+    expect_error(AppError::NotFound("Sticker with id provided does not exist!"), resp).await;
 
     common::expect_n_elements(
         &app,

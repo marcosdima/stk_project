@@ -2,18 +2,23 @@ use crate::*;
 
 #[actix_web::test]
 async fn test_create_category() {
-    let (app, _) = get_app().await;
+    let (app, pool) = get_app().await;
 
     let new_category_data = get_category_default(1);
 
     // Creates a category.
-    let req = test::TestRequest::default()
-        .method(Method::POST)
-        .uri(&format!("/categories"))
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&new_category_data).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+    let resp = basic_request(
+        &app,
+        "/categories",
+        Method::POST,
+        headers,
+        serde_json::to_string(&new_category_data).unwrap(),
+    ).await;
+
     assert!(resp.status().is_success());
 
     // Gets the new category.
@@ -25,21 +30,25 @@ async fn test_create_category() {
 
 #[actix_web::test]
 async fn test_create_category_wrong_sub_category_of() {
-    let (app, _) = get_app().await;
+    let (app, pool) = get_app().await;
 
     let mut new_category_data = get_category_default(1);
     new_category_data.sub_category_of = Some(String::from("no-id"));
 
     // Creates a category.
-    let req = test::TestRequest::default()
-        .method(Method::POST)
-        .uri(&format!("/categories"))
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&new_category_data).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+    let resp = basic_request(
+        &app,
+        "/categories",
+        Method::POST,
+        headers,
+        serde_json::to_string(&new_category_data).unwrap(),
+    ).await;
 
-    assert!(resp.status().is_client_error());
+    expect_error(AppError::NotFound("Category with id provided does not exist!"), resp).await;
 
     // Gets the new category.
     let empty: Vec<Category> = vec![];

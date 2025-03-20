@@ -43,18 +43,8 @@ async fn test_get_category_stickers() {
 
     // Sets new data models.
     let new_stk_cat_data = NewStickerCategory::new(stk.id.clone(), cat.id.clone());
-
-    // Assigns a category.
-    let req = test::TestRequest::default()
-        .method(Method::POST)
-        .uri(&format!("/categories/assign"))
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&new_stk_cat_data).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
-    assert!(resp.status().is_success());
-
-    // Tries again, with the same data.
+    let _ = StickerCategory::create(&pool, new_stk_cat_data);
+    
     let req = test::TestRequest::default()
         .method(Method::GET)
         .uri(&format!("/categories/{}/stickers", cat.id))

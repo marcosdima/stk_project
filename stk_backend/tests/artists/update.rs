@@ -21,13 +21,18 @@ async fn test_update_artist() {
     );
 
     // Updates artist
-    let req = test::TestRequest::default()
-        .method(Method::PUT)
-        .uri("/artists")
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&updated_artist_data).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+    
+    let resp = basic_request(
+        &app,
+        "/artists/update",
+        Method::PUT,
+        headers,
+        serde_json::to_string(&updated_artist_data).unwrap(),
+    ).await;
 
     assert!(resp.status().is_success());
 
@@ -47,7 +52,7 @@ async fn test_update_artist() {
 
 #[actix_web::test]
 async fn test_update_artist_not_found() {
-    let (app, _) = get_app().await;
+    let (app, pool) = get_app().await;
 
     let updated_artist_data = ArtistUpdate::new(
         Uuid::new_v4().to_string(),
@@ -57,14 +62,20 @@ async fn test_update_artist_not_found() {
     );
 
     // Updates artist
-    let req = test::TestRequest::default()
-        .method(Method::PUT)
-        .uri("/artists")
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&updated_artist_data).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
-    assert!(resp.status().is_client_error());
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+    
+    let resp = basic_request(
+        &app,
+        "/artists/update",
+        Method::PUT,
+        headers,
+        serde_json::to_string(&updated_artist_data).unwrap(),
+    ).await;
+    
+    expect_error(AppError::NotFound("Artist with id provided does not exist!"), resp).await;
 }
 
 #[actix_web::test]
@@ -77,19 +88,26 @@ async fn test_update_artist_wrong_id() {
 
     let updated_artist_data = serde_json::json!({
         "id": "wrong-id",
-        "label": new_label,
-        "url": new_url
+        "name": new_label,
+        "url": new_url,
+        "logo_url": "None",
     });
 
     // Updates artist
-    let req = test::TestRequest::default()
-        .method(Method::PUT)
-        .uri("/artists")
-        .insert_header(ContentType::json())
-        .set_payload(serde_json::to_string(&updated_artist_data).unwrap())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
-    assert!(resp.status().is_client_error());
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_json_header(),
+    ];
+    
+    let resp = basic_request(
+        &app,
+        "/artists/update",
+        Method::PUT,
+        headers,
+        serde_json::to_string(&updated_artist_data).unwrap(),
+    ).await;
+
+    expect_error(AppError::NotFound("Artist with id provided does not exist!"), resp).await;
 
     common::expect_n_elements(
         &app,

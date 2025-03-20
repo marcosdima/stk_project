@@ -12,12 +12,18 @@ async fn test_delete_stickers() {
     let created = create_stickers(&pool, 1).pop().unwrap().id;
 
     // Should return a succes message.
-    let req = test::TestRequest::default()
-        .method(Method::DELETE)
-        .uri(&format!("/stickers/{created}"))
-        .insert_header(ContentType::plaintext())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_plain_text_header(),
+    ];
+    let resp = basic_request(
+        &app,
+        &format!("/stickers/{created}/delete"),
+        Method::DELETE,
+        headers,
+        "",
+    ).await;
+
     assert!(resp.status().is_success());
     let body = test::read_body(resp).await;
     assert_eq!(body, "Sticker deleted successfully");
@@ -29,17 +35,21 @@ async fn test_delete_stickers() {
 
 #[actix_web::test]
 async fn test_delete_stickers_not_found() {
-    let (app, _) = get_app().await;
+    let (app, pool) = get_app().await;
 
     // Should return a succes message.
-    let req = test::TestRequest::default()
-        .method(Method::DELETE)
-        .uri(&format!("/stickers/id-not-found"))
-        .insert_header(ContentType::plaintext())
-        .to_request();
-    let resp = test::call_service(&app, req).await;
+    let headers = vec![
+        get_admin_token_header(&pool),
+        get_plain_text_header(),
+    ];
+    let resp = basic_request(
+        &app,
+        "/stickers/id-not-found/delete",
+        Method::DELETE,
+        headers,
+        "",
+    ).await;
+    
     assert!(resp.status().is_client_error());
-    let body = test::read_body(resp).await;
-    assert_eq!(body, "Sticker not found");
-
+    expect_error(AppError::NotFound("Sticker not found"), resp).await;
 }
